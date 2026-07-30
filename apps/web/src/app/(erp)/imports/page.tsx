@@ -181,18 +181,26 @@ export default function ImportsPage() {
           let gradeName = "Grade 5";
           let sectionName = "A";
 
-          const classMatch = rawClass.match(/(\d+|Nursery|Junior KG|Senior KG|Jr KG|Sr KG)\s*([A-D])?/i);
+          const classMatch = rawClass.match(/(\d+|Nursery|Junior KG|Senior KG|Jr KG|Sr KG|Passout|Alumni|Old|Graduated)\s*([A-D])?/i);
           if (classMatch) {
             const gVal = classMatch[1];
+            const numVal = parseInt(gVal);
             if (gVal.toLowerCase().includes("nursery")) gradeName = "Nursery";
             else if (gVal.toLowerCase().includes("jr") || gVal.toLowerCase().includes("junior")) gradeName = "Junior KG";
             else if (gVal.toLowerCase().includes("sr") || gVal.toLowerCase().includes("senior")) gradeName = "Senior KG";
-            else gradeName = `Grade ${gVal}`;
+            else if (numVal >= 11 || gVal.toLowerCase().includes("passout") || gVal.toLowerCase().includes("alumni") || gVal.toLowerCase().includes("old") || gVal.toLowerCase().includes("graduated")) {
+              gradeName = "Graduated (Alumni / Passed Out)";
+            } else gradeName = `Grade ${gVal}`;
 
             if (classMatch[2]) sectionName = classMatch[2].toUpperCase();
+          } else if (rawClass.includes("11") || rawClass.includes("12") || sheetName.toLowerCase().includes("old") || sheetName.toLowerCase().includes("passout")) {
+            gradeName = "Graduated (Alumni / Passed Out)";
           } else if (sheetName) {
             const sheetMatch = sheetName.match(/(\d+)/);
-            if (sheetMatch) gradeName = `Grade ${sheetMatch[1]}`;
+            if (sheetMatch) {
+              const numVal = parseInt(sheetMatch[1]);
+              gradeName = numVal >= 11 ? "Graduated (Alumni / Passed Out)" : `Grade ${numVal}`;
+            }
           }
 
           // Use deterministic GR Number and Student ID based on SN column & Grade name to prevent double entries on re-import
@@ -202,6 +210,7 @@ export default function ImportsPage() {
           if (gradeLow.includes("nursery")) gradePrefix = "N";
           else if (gradeLow.includes("junior") || gradeLow.includes("jr")) gradePrefix = "JK";
           else if (gradeLow.includes("senior") || gradeLow.includes("sr")) gradePrefix = "SK";
+          else if (gradeLow.includes("graduated") || gradeLow.includes("alumni") || gradeLow.includes("passout")) gradePrefix = "OLD";
           else {
             const numMatch = gradeName.match(/(\d+)/);
             gradePrefix = numMatch ? numMatch[1] : "G";
@@ -209,13 +218,14 @@ export default function ImportsPage() {
           const grNum = `GR-${gradePrefix}-${100 + snVal}`;
           const studentId = `s_imp_${grNum.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
 
-
           let category: "NEW_ADMISSION" | "EXISTING" = "EXISTING";
           if (feesDemand === 31000 || feesDemand === 25500) {
             category = "NEW_ADMISSION";
           }
 
           const calculatedDemand = (feesDemand > 0 ? feesDemand : calculateGradeDemand(gradeName, category)) + oldBalance;
+
+          const isPassout = gradeName.toLowerCase().includes("graduated") || gradeName.toLowerCase().includes("alumni") || gradeName.toLowerCase().includes("passout");
 
           const studentObj = {
             id: studentId,
@@ -228,11 +238,11 @@ export default function ImportsPage() {
             dateOfBirth: "2018-05-15",
             grade: gradeName,
             section: sectionName,
-            wing: (gradeName.includes("5") || gradeName.includes("6") || gradeName.includes("7") || gradeName.includes("8") || gradeName.includes("9") || gradeName.includes("10") ? "SECONDARY" : "PRIMARY") as any,
+            wing: "SECONDARY" as any,
             admissionCategory: category,
             guardianName: "Parent",
             guardianMobile: contact,
-            status: "ACTIVE",
+            status: isPassout ? "PASSOUT" : "ACTIVE",
             totalDemand: calculatedDemand,
             oldBalance: oldBalance,
           };
