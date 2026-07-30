@@ -44,20 +44,19 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 flex items-center px-6 gap-4 flex-shrink-0">
+    <header className="relative h-16 bg-white border-b border-slate-200/80 flex items-center px-6 gap-4 flex-shrink-0">
       {/* Breadcrumb */}
       <div className="flex-1 min-w-0">
         <Breadcrumb />
       </div>
 
       {/* Centered School Name and Logo */}
-      <div className="flex-1 flex justify-center items-center gap-2.5">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 pointer-events-none">
         <img
           src="/logo.jpeg"
           alt="MVHS Logo"
           className="w-8 h-8 rounded-lg object-cover shadow-sm border border-slate-200"
           onError={(e) => {
-            // Fallback if logo is missing during local build
             e.currentTarget.style.display = "none";
           }}
         />
