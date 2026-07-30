@@ -18,7 +18,7 @@ import {
   Eye,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { calculateStudentFinancials, getStoredPayments, saveStoredPayment, getStoredStudents, PaymentLogStore, calculateGradeDemand } from "@/lib/school-store";
+import { calculateStudentFinancials, getStoredPayments, saveStoredPayment, getStoredStudents, PaymentLogStore, calculateGradeDemand, ALL_SCHOOL_GRADES } from "@/lib/school-store";
 
 interface StudentData {
   id: string;
@@ -32,6 +32,13 @@ interface StudentData {
   totalDemand: number;
   outstandingTotal: number;
 }
+
+// Wing labels for the browser
+const WINGS = [
+  { id: "PRE-PRIMARY", label: "Pre-Primary", sub: "Nursery, Jr KG, Sr KG", color: "emerald" },
+  { id: "PRIMARY", label: "Primary", sub: "Grade 1 to 4", color: "blue" },
+  { id: "SECONDARY", label: "Secondary", sub: "Grade 5 to 10", color: "purple" },
+] as const;
 
 export default function FeeCollectionPage() {
   const [grSearch, setGrSearch] = useState("");
@@ -54,7 +61,44 @@ export default function FeeCollectionPage() {
   const [outstandingTotal, setOutstandingTotal] = useState(0);
   const [paymentHistory, setPaymentHistory] = useState<PaymentLogStore[]>([]);
 
+  // Wing/Grade Browser State
+  const [selectedWing, setSelectedWing] = useState<string | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
+  const [gradeStudents, setGradeStudents] = useState<StudentData[]>([]);
+  const [isLoadingGrade, setIsLoadingGrade] = useState(false);
+
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const loadStudentsForGrade = async (gradeName: string) => {
+    setIsLoadingGrade(true);
+    setGradeStudents([]);
+    try {
+      const token = sessionStorage.getItem("access_token") ?? "";
+      const res = await fetch("/api/v1/students", { headers: { Authorization: `Bearer ${token}` } });
+      let apiStudents: any[] = [];
+      if (res.ok) {
+        const data = await res.json();
+        apiStudents = (data.data || []).map((s: any) => {
+          const g = localStorage.getItem(`mvhs_student_grade_${s.id}`) || s.enrolments?.[0]?.grade?.name || "Grade 1";
+          const cat = (localStorage.getItem(`mvhs_student_category_${s.id}`) as any) || (s.enrolments?.[0]?.admissionType === "NEW" ? "NEW_ADMISSION" : "EXISTING");
+          const fin = calculateStudentFinancials({ id: s.id, grade: g, admissionCategory: cat });
+          return { id: s.id, grNumber: s.grNumber, studentId: s.studentId, fullName: `${s.firstName} ${s.lastName}`, grade: g, section: s.enrolments?.[0]?.section?.name || "A", guardianName: s.guardians?.[0]?.guardian?.firstName || "Parent", relationship: s.guardians?.[0]?.relationship || "Guardian", totalDemand: fin.demand, outstandingTotal: fin.outstanding };
+        });
+      }
+      const local = getStoredStudents();
+      const localMapped: StudentData[] = local.map((s) => {
+        const g = localStorage.getItem(`mvhs_student_grade_${s.id}`) || s.grade || "Grade 1";
+        const cat = (localStorage.getItem(`mvhs_student_category_${s.id}`) as any) || s.admissionCategory || "EXISTING";
+        const fin = calculateStudentFinancials({ id: s.id, grade: g, admissionCategory: cat });
+        return { id: s.id, grNumber: s.grNumber, studentId: s.studentId, fullName: s.fullName, grade: g, section: s.section || "A", guardianName: s.guardianName || "Parent", relationship: "Guardian", totalDemand: fin.demand, outstandingTotal: fin.outstanding };
+      });
+      const map = new Map<string, StudentData>();
+      [...apiStudents, ...localMapped].forEach((s) => map.set(s.id, s));
+      const all = Array.from(map.values()).filter((s) => s.grade === gradeName);
+      setGradeStudents(all);
+    } catch { setGradeStudents([]); }
+    finally { setIsLoadingGrade(false); }
+  };
 
   // Auto-search engine suggestions searching BOTH live backend API and persistent store
   useEffect(() => {
@@ -451,12 +495,142 @@ export default function FeeCollectionPage() {
 
       {/* Student Details & Payment Counter Workspace */}
       {!currentStudent ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-500 shadow-sm">
-          <Search className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-          <p className="font-bold text-slate-800 text-base">Search for a student to open Fee Collection Workspace</p>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            Type the student's GR Number or Name into the search engine above to load fee charges, ledger balance, and issue receipts.
-          </p>
+        <div className="space-y-4">
+          {/* Wing Selector */}
+          <div className="grid grid-cols-3 gap-4">
+            {WINGS.map((wing) => {
+              const gradesInWing = ALL_SCHOOL_GRADES.filter((g) => g.wing === wing.id);
+              const isActive = selectedWing === wing.id;
+              const colorMap: Record<string, string> = {
+                emerald: isActive ? "bg-emerald-600 text-white border-emerald-600 shadow-emerald-200" : "bg-white border-slate-200 text-slate-700 hover:border-emerald-400 hover:bg-emerald-50",
+                blue: isActive ? "bg-blue-600 text-white border-blue-600 shadow-blue-200" : "bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:bg-blue-50",
+                purple: isActive ? "bg-purple-600 text-white border-purple-600 shadow-purple-200" : "bg-white border-slate-200 text-slate-700 hover:border-purple-400 hover:bg-purple-50",
+              };
+              return (
+                <button
+                  key={wing.id}
+                  onClick={() => {
+                    if (selectedWing === wing.id) { setSelectedWing(null); setSelectedGrade(null); setGradeStudents([]); }
+                    else { setSelectedWing(wing.id); setSelectedGrade(null); setGradeStudents([]); }
+                  }}
+                  className={`border-2 rounded-2xl p-5 text-left transition-all shadow-sm ${colorMap[wing.color]}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <GraduationCap className="w-5 h-5" />
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                    }`}>{gradesInWing.length} grades</span>
+                  </div>
+                  <p className="text-base font-bold">{wing.label}</p>
+                  <p className={`text-xs mt-0.5 ${isActive ? "text-white/80" : "text-slate-500"}`}>{wing.sub}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Grade Pills — shown when a wing is selected */}
+          {selectedWing && (
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Select a Grade</p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_SCHOOL_GRADES.filter((g) => g.wing === selectedWing).map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => { setSelectedGrade(g.name); loadStudentsForGrade(g.name); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                      selectedGrade === g.name
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:border-blue-300"
+                    }`}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Student List — shown when a grade is selected */}
+          {selectedGrade && (
+            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-sm font-bold text-slate-900">{selectedGrade} — Student List</h3>
+                </div>
+                <span className="text-xs text-slate-500 font-medium">
+                  {isLoadingGrade ? "Loading..." : `${gradeStudents.length} students`}
+                </span>
+              </div>
+
+              {isLoadingGrade ? (
+                <div className="p-10 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading students...
+                </div>
+              ) : gradeStudents.length === 0 ? (
+                <div className="p-10 text-center">
+                  <GraduationCap className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                  <p className="text-sm font-semibold text-slate-500">No students enrolled in {selectedGrade}</p>
+                  <p className="text-xs text-slate-400 mt-1">Use the search bar above to look up by name or GR number</p>
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b border-slate-200">
+                    <tr>
+                      <th className="px-5 py-3">#</th>
+                      <th className="px-5 py-3">Student Name</th>
+                      <th className="px-5 py-3">GR Number</th>
+                      <th className="px-5 py-3">Section</th>
+                      <th className="px-5 py-3 text-right">Outstanding</th>
+                      <th className="px-5 py-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {gradeStudents.map((s, idx) => (
+                      <tr key={s.id} className="hover:bg-blue-50/40 transition-colors">
+                        <td className="px-5 py-3 font-bold text-slate-400">{idx + 1}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                              {s.fullName[0]}
+                            </div>
+                            <span className="font-semibold text-slate-900">{s.fullName}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 font-mono text-blue-600 font-semibold">{s.grNumber}</td>
+                        <td className="px-5 py-3 text-slate-600">Sec {s.section}</td>
+                        <td className="px-5 py-3 text-right">
+                          <span className={`font-mono font-bold text-sm ${
+                            s.outstandingTotal > 0 ? "text-amber-700" : "text-emerald-600"
+                          }`}>
+                            {s.outstandingTotal > 0 ? formatCurrency(s.outstandingTotal) : "Settled"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-center">
+                          <button
+                            onClick={() => selectStudent(s)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-all"
+                          >
+                            <IndianRupee className="w-3 h-3" />
+                            Collect Fees
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* Default hint when nothing is selected */}
+          {!selectedWing && (
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-10 text-center text-slate-400 shadow-sm">
+              <Search className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+              <p className="font-bold text-slate-700 text-sm">Browse by Wing or Search by Name / GR Number</p>
+              <p className="text-xs text-slate-400 mt-1">Select Pre-Primary, Primary, or Secondary above — or use the search bar to find a student directly</p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
