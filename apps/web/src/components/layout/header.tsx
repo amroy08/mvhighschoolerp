@@ -50,8 +50,8 @@ export function Header() {
         <Breadcrumb />
       </div>
 
-      {/* Centered School Name and Logo */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 pointer-events-none">
+      {/* Centered School Name and Logo (Visually offset by half the sidebar width of 256px) */}
+      <div className="absolute left-[calc(50%-128px)] -translate-x-1/2 flex items-center gap-2.5 pointer-events-none">
         <img
           src="/logo.jpeg"
           alt="MVHS Logo"
