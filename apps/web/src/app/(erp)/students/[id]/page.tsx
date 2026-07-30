@@ -285,6 +285,40 @@ export default function StudentProfilePage() {
     setToastMsg(`Student successfully promoted to ${promoTargetGrade} (${getWingForGrade(promoTargetGrade)} Wing)! Fee structure updated.`);
   };
 
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingLoading, setIsDeletingLoading] = useState(false);
+
+  const handleDeleteStudent = async () => {
+    if (!student) return;
+    setIsDeletingLoading(true);
+
+    try {
+      // 1. Remove from API
+      const token = sessionStorage.getItem("access_token") ?? "";
+      await fetch(`/api/v1/students/${student.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // API fallback
+    }
+
+    // 2. Remove from Local Storage persistent store
+    const localStudents = getStoredStudents();
+    const updatedLocal = localStudents.filter((s) => s.id !== student.id);
+    localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
+
+    // Remove student specific local storage keys
+    localStorage.removeItem(`mvhs_student_grade_${student.id}`);
+    localStorage.removeItem(`mvhs_student_category_${student.id}`);
+    localStorage.removeItem(`mvhs_student_old_balance_${student.id}`);
+    localStorage.removeItem(`mvhs_payments_${student.id}`);
+
+    setIsDeletingLoading(false);
+    setIsDeleting(false);
+    router.push("/students");
+  };
+
   const handleUploadDocument = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDocName.trim()) return;
@@ -372,7 +406,7 @@ export default function StudentProfilePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={() => setIsPromoting(true)}
               className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
@@ -386,6 +420,13 @@ export default function StudentProfilePage() {
             >
               <Edit2 className="w-4 h-4" />
               Edit Profile
+            </button>
+            <button
+              onClick={() => setIsDeleting(true)}
+              className="inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              Delete Student
             </button>
           </div>
         </div>
@@ -791,6 +832,68 @@ export default function StudentProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleting && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-rose-700 flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+                Delete Student Record
+              </h3>
+              <button onClick={() => setIsDeleting(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="text-slate-600 text-sm">
+                Are you sure you want to permanently delete <strong className="text-slate-900">{student?.fullName}</strong> (<span className="font-mono font-bold text-blue-600">{student?.grNumber}</span>)?
+              </p>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-800 space-y-1">
+                <p className="font-bold flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  Warning: Action Cannot Be Undone
+                </p>
+                <p className="text-[11px] text-rose-700">
+                  Deleting this student will remove their academic profile, enrolments, carried balances, and persistent store records from Marwari Vidyalaya High School ERP.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsDeleting(false)}
+                disabled={isDeletingLoading}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteStudent}
+                disabled={isDeletingLoading}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2"
+              >
+                {isDeletingLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Yes, Delete Permanently
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
