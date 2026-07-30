@@ -112,7 +112,14 @@ export default function OutstandingsPage() {
           studentName: s.fullName || `${s.firstName} ${s.lastName}`,
           grade: gradeName,
           section: s.enrolments?.[0]?.section?.name || s.section || "A",
-          guardianMobile: s.guardians?.[0]?.guardian?.mobile || s.guardianMobile || "N/A",
+          guardianMobile:
+            s.guardianMobile ||
+            s.primaryGuardian?.mobile ||
+            s.guardians?.[0]?.guardian?.mobile ||
+            s.contactNumber ||
+            s.mobile ||
+            s.phone ||
+            "N/A",
           totalDemand: financials.demand,
           paidAmount: financials.paid,
           outstandingAmount: financials.outstanding,

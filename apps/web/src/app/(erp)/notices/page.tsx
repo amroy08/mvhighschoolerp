@@ -205,7 +205,15 @@ export default function NoticesPage() {
     const student = students[broadcastIndex];
     if (!student) return;
 
-    const rawPhone = student.guardianMobile.replace(/[^0-9]/g, "");
+    const guardianMobileStr =
+      student.guardianMobile ||
+      (student as any).primaryGuardian?.mobile ||
+      (student as any).guardians?.[0]?.guardian?.mobile ||
+      (student as any).contactNumber ||
+      (student as any).mobile ||
+      (student as any).phone ||
+      "";
+    const rawPhone = guardianMobileStr.replace(/[^0-9]/g, "");
     const phone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
 
     const pdfLine = notice.pdfName
