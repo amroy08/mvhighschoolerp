@@ -20,6 +20,7 @@ import {
   Shield,
   Landmark,
   TrendingUp,
+  Megaphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Imports",
     href: "/imports",
     icon: <Import className="w-4 h-4" />,
+  },
+  {
+    label: "Notices & Circulars",
+    href: "/notices",
+    icon: <Megaphone className="w-4 h-4" />,
   },
   {
     label: "Notifications",
