@@ -200,11 +200,16 @@ export default function OutstandingsPage() {
                   <td className="px-6 py-4 font-mono font-bold text-amber-600">{formatCurrency(o.outstandingAmount)}</td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => alert(`Sending payment reminder SMS/email to ${o.guardianMobile}...`)}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors"
+                      onClick={() => {
+                        const rawPhone = o.guardianMobile.replace(/[^0-9]/g, "");
+                        const phone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+                        const msg = `Dear Parent, fee payment reminder from Marwari Vidyalaya High School for your ward ${o.studentName} (${o.grNumber}, ${o.grade}). Pending fee amount due: INR ${o.outstandingAmount.toLocaleString("en-IN")}. Kindly settle at the fee counter. Thank you!`;
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors"
                     >
-                      <Mail className="w-3.5 h-3.5" />
-                      Send Reminder
+                      <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                      Send WhatsApp Reminder
                     </button>
                   </td>
                 </tr>
