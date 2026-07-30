@@ -238,9 +238,9 @@ export default function OutstandingsPage() {
           <p className="text-xs text-slate-400 mt-1 font-semibold">Ready for WhatsApp Broadcast</p>
         </div>
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-slate-500">Critical Defaulters (Dues &gt; 0)</p>
+          <p className="text-xs font-semibold text-slate-500">Critical Defaulters in View</p>
           <p className="text-2xl font-bold text-red-600 mt-1">
-            {outstandings.filter((o) => o.outstandingAmount > 0).length} Students
+            {filtered.filter((o) => o.outstandingAmount > 0).length} Students
           </p>
           <p className="text-xs text-slate-400 mt-1">Immediate follow-up required</p>
         </div>
