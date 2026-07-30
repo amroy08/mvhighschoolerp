@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getStoredStudents, calculateStudentFinancials, getStoredPayments } from "@/lib/school-store";
+import { SchoolLogo } from "@/components/shared/school-logo";
 
 interface StudentLedgerData {
   student: {
@@ -157,8 +158,8 @@ export default function StudentLedgerPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header (Screen only) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <BookOpen className="w-7 h-7 text-blue-600" />
@@ -178,8 +179,8 @@ export default function StudentLedgerPage() {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+      {/* Search Bar (Screen only) */}
+      <form onSubmit={handleSearch} className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm no-print">
         <div className="relative max-w-xl flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
@@ -205,7 +206,7 @@ export default function StudentLedgerPage() {
       </form>
 
       {!ledger ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-500 shadow-sm">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-500 shadow-sm no-print">
           <BookOpen className="w-10 h-10 mx-auto text-slate-300 mb-2" />
           <p className="font-bold text-slate-800 text-base">Search for a student to view Financial Ledger Statement</p>
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
@@ -213,65 +214,79 @@ export default function StudentLedgerPage() {
           </p>
         </div>
       ) : (
-        <>
+        <div className="printable-receipt-area space-y-6">
+          {/* Printable Statement School Header (visible on print & screen) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-center space-y-2">
+            <SchoolLogo className="w-16 h-16 mx-auto drop-shadow-sm" />
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-wide">
+              MARWARI VIDYALAYA SANCHILIT
+            </h2>
+            <p className="text-xs text-slate-500 max-w-lg mx-auto">
+              463-475, S.V.P. ROAD, PRARTHNA SAMAJ, Charni Road, Opera House, Mumbai, Maharashtra 400004
+            </p>
+            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider pt-1 border-t border-slate-100 max-w-xs mx-auto">
+              Official Student Financial Ledger Statement
+            </p>
+          </div>
+
           {/* Student Banner & Summary Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Student Profile Card */}
-            <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex items-center gap-4 shadow-sm">
-              <div className="w-14 h-14 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl flex items-center justify-center font-bold text-xl">
+            <div className="md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl flex items-center justify-center font-bold text-lg">
                 {ledger.student.fullName[0]}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-slate-900">{ledger.student.fullName}</h2>
-                  <span className="bg-blue-50 text-blue-700 border border-blue-200 font-mono text-xs font-semibold px-2 py-0.5 rounded">
+                  <h2 className="text-base font-bold text-slate-900">{ledger.student.fullName}</h2>
+                  <span className="bg-blue-50 text-blue-700 border border-blue-200 font-mono text-xs font-bold px-2 py-0.5 rounded">
                     {ledger.student.grNumber}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">{ledger.student.grade} • ID: {ledger.student.studentId}</p>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">{ledger.student.grade} • ID: {ledger.student.studentId}</p>
               </div>
             </div>
 
             {/* Summary Stat Cards */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
               <p className="text-xs text-slate-500 font-medium">Total Fee Demand</p>
-              <p className="text-xl font-bold text-slate-900 mt-1">{formatCurrency(ledger.summary.totalDemand)}</p>
-              <p className="text-xs text-slate-400 mt-0.5 font-medium">Academic Year 2026-27</p>
+              <p className="text-lg font-bold text-slate-900 mt-0.5">{formatCurrency(ledger.summary.totalDemand)}</p>
+              <p className="text-[11px] text-slate-400 font-medium">Academic Year 2026-27</p>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
-              <p className="text-xs text-slate-500 font-medium">Total Paid</p>
-              <p className="text-xl font-bold text-emerald-600 mt-1">{formatCurrency(ledger.summary.totalPaid)}</p>
-              <p className="text-xs text-emerald-600/80 mt-0.5 font-medium">Settled Payments</p>
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs text-slate-500 font-medium">Total Paid / Outstanding</p>
+              <p className="text-lg font-bold text-emerald-600 mt-0.5">{formatCurrency(ledger.summary.totalPaid)}</p>
+              <p className="text-[11px] text-amber-600 font-bold">Due: {formatCurrency(ledger.summary.totalOutstanding)}</p>
             </div>
           </div>
 
           {/* Ledger Statement Table */}
           <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">Account Ledger Statement</h3>
-              <span className="text-xs text-slate-500 font-medium">Sorted by Date</span>
+            <div className="px-6 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Account Ledger Transaction Statement</h3>
+              <span className="text-xs text-slate-500 font-medium">Generated Date: {new Date().toISOString().split("T")[0]}</span>
             </div>
 
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Reference</th>
-                  <th className="px-6 py-4">Description</th>
-                  <th className="px-6 py-4">Debit (Fee Demand)</th>
-                  <th className="px-6 py-4">Credit (Payment)</th>
-                  <th className="px-6 py-4">Running Balance</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Type</th>
+                  <th className="px-5 py-3">Reference</th>
+                  <th className="px-5 py-3">Description</th>
+                  <th className="px-5 py-3 text-right">Debit (Demand)</th>
+                  <th className="px-5 py-3 text-right">Credit (Paid)</th>
+                  <th className="px-5 py-3 text-right">Running Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 font-medium">
                 {ledger.transactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-slate-50/80">
-                    <td className="px-6 py-4 text-xs text-slate-500">{formatDate(tx.date)}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3 font-mono text-slate-600">{tx.date}</td>
+                    <td className="px-5 py-3">
                       <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           tx.type === "PAYMENT"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-blue-50 text-blue-700 border border-blue-200"
@@ -280,24 +295,39 @@ export default function StudentLedgerPage() {
                         {tx.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-800">{tx.reference}</td>
-                    <td className="px-6 py-4 text-xs text-slate-600">{tx.description}</td>
-                    <td className="px-6 py-4 font-mono font-semibold text-slate-700">
+                    <td className="px-5 py-3 font-mono font-bold text-slate-800">{tx.reference}</td>
+                    <td className="px-5 py-3 text-slate-600">{tx.description}</td>
+                    <td className="px-5 py-3 text-right font-mono font-bold text-slate-900">
                       {tx.type === "CHARGE" ? formatCurrency(tx.amount) : "—"}
                     </td>
-                    <td className="px-6 py-4 font-mono font-bold text-emerald-600">
+                    <td className="px-5 py-3 text-right font-mono font-bold text-emerald-600">
                       {tx.type === "PAYMENT" ? formatCurrency(tx.amount) : "—"}
                     </td>
-                    <td className="px-6 py-4 font-mono font-bold text-amber-600">
+                    <td className="px-5 py-3 text-right font-mono font-bold text-amber-600">
                       {formatCurrency(tx.runningBalance)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {/* Statement Footer */}
+            <div className="p-5 border-t border-slate-200 flex justify-between items-end text-xs">
+              <div>
+                <p className="font-bold text-slate-700">Official School Statement</p>
+                <p className="text-slate-500 text-[11px]">Computer generated ledger statement for Marwari Vidyalaya High School.</p>
+              </div>
+
+              <div className="text-center space-y-0.5">
+                <div className="w-36 border-b border-slate-400"></div>
+                <p className="font-bold text-slate-700 text-xs">Accountant / Principal</p>
+                <p className="text-[10px] text-slate-400">(Seal &amp; Signature)</p>
+              </div>
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 }
+
