@@ -873,25 +873,25 @@ export default function FeeCollectionPage() {
         const invoiceRemainingOutstanding = Math.max(0, invoiceTotalDemand - invoiceTotalPaidSum);
 
         const renderSingleCopy = (copyType: "SCHOOL COPY" | "PARENT COPY") => (
-          <div className="bg-white border border-slate-300 rounded-xl p-5 space-y-4 text-xs font-medium text-slate-800 relative">
+          <div className="bg-white border border-slate-300 rounded-lg p-3.5 space-y-2.5 text-[11px] font-medium text-slate-800 relative">
             {/* Watermark Copy Tag */}
-            <div className="absolute right-4 top-4 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            <div className="absolute right-3 top-3 bg-blue-50 text-blue-800 border border-blue-200 text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
               [ {copyType} ]
             </div>
 
-            {/* Header with Official Logo */}
-            <div className="text-center space-y-1.5 border-b border-slate-200 pb-3">
-              <SchoolLogo className="w-14 h-14 mx-auto drop-shadow-sm" />
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide leading-tight mt-1">
+            {/* Header with Official Logo from Downloads */}
+            <div className="text-center space-y-1 border-b border-slate-200 pb-2">
+              <SchoolLogo className="w-12 h-12 mx-auto drop-shadow-sm" />
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-wide leading-tight mt-0.5">
                 MARWARI VIDYALAYA SANCHILIT
               </h2>
-              <p className="text-[10px] text-slate-500 max-w-md mx-auto leading-normal">
+              <p className="text-[9px] text-slate-600 max-w-md mx-auto leading-tight">
                 463-475, S.V.P. ROAD, PRARTHNA SAMAJ, Charni Road, Opera House, Mumbai, Maharashtra 400004
               </p>
             </div>
 
             {/* Metadata Bar */}
-            <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700">
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-700">
               <div className="space-y-0.5">
                 <p>Invoice Date : <span className="font-mono text-slate-900 font-bold">{activeInvoiceModal.paidDate}</span></p>
                 <p>Invoice No : <span className="font-mono text-slate-900 font-bold">{activeInvoiceModal.invoiceNo}</span></p>
@@ -900,7 +900,7 @@ export default function FeeCollectionPage() {
               </div>
 
               <div className="text-right space-y-0.5">
-                <p className="text-slate-400 uppercase font-bold text-[10px]">Receipt To</p>
+                <p className="text-slate-400 uppercase font-bold text-[9px]">Receipt To</p>
                 <p className="text-xs font-bold text-slate-900 uppercase">{currentStudent.fullName}</p>
                 <p className="text-slate-600 font-normal">s/o {currentStudent.guardianName}</p>
                 <p className="text-slate-800 font-bold">{currentStudent.grade}</p>
@@ -908,63 +908,63 @@ export default function FeeCollectionPage() {
             </div>
 
             {/* Line Items Table */}
-            <div className="border-t border-b border-slate-200 py-1.5">
-              <table className="w-full text-left text-[11px]">
+            <div className="border-t border-b border-slate-200 py-1">
+              <table className="w-full text-left text-[10px]">
                 <thead className="text-slate-700 font-bold border-b border-slate-200">
                   <tr>
-                    <th className="py-1 w-6">#</th>
-                    <th className="py-1">Description</th>
-                    <th className="py-1 text-right">Fee paid</th>
-                    <th className="py-1 text-center w-10">Qty</th>
-                    <th className="py-1 text-right">Amount</th>
+                    <th className="py-0.5 w-6">#</th>
+                    <th className="py-0.5">Description</th>
+                    <th className="py-0.5 text-right">Fee paid</th>
+                    <th className="py-0.5 text-center w-8">Qty</th>
+                    <th className="py-0.5 text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-800">
                   <tr>
-                    <td className="py-1">1</td>
-                    <td className="py-1 font-bold">Arrear Fees :</td>
-                    <td className="py-1 text-right font-mono">INR {activeInvoiceModal.splitStructure.admissionFees.toFixed(2)} /-</td>
-                    <td className="py-1 text-center font-mono">1</td>
-                    <td className="py-1 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.admissionFees.toFixed(2)} /-</td>
+                    <td className="py-0.5">1</td>
+                    <td className="py-0.5 font-bold">Arrear Fees :</td>
+                    <td className="py-0.5 text-right font-mono">INR {activeInvoiceModal.splitStructure.admissionFees.toFixed(2)} /-</td>
+                    <td className="py-0.5 text-center font-mono">1</td>
+                    <td className="py-0.5 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.admissionFees.toFixed(2)} /-</td>
                   </tr>
                   <tr>
-                    <td className="py-1">2</td>
-                    <td className="py-1 font-bold">Monthly Fees :</td>
-                    <td className="py-1 text-right font-mono">INR {activeInvoiceModal.splitStructure.monthlyFees.toFixed(2)} /-</td>
-                    <td className="py-1 text-center font-mono">1</td>
-                    <td className="py-1 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.monthlyFees.toFixed(2)} /-</td>
+                    <td className="py-0.5">2</td>
+                    <td className="py-0.5 font-bold">Monthly Fees :</td>
+                    <td className="py-0.5 text-right font-mono">INR {activeInvoiceModal.splitStructure.monthlyFees.toFixed(2)} /-</td>
+                    <td className="py-0.5 text-center font-mono">1</td>
+                    <td className="py-0.5 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.monthlyFees.toFixed(2)} /-</td>
                   </tr>
                   <tr>
-                    <td className="py-1">3</td>
-                    <td className="py-1 font-bold">Term Fees :</td>
-                    <td className="py-1 text-right font-mono">INR {activeInvoiceModal.splitStructure.termFees.toFixed(2)} /-</td>
-                    <td className="py-1 text-center font-mono">1</td>
-                    <td className="py-1 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.termFees.toFixed(2)} /-</td>
+                    <td className="py-0.5">3</td>
+                    <td className="py-0.5 font-bold">Term Fees :</td>
+                    <td className="py-0.5 text-right font-mono">INR {activeInvoiceModal.splitStructure.termFees.toFixed(2)} /-</td>
+                    <td className="py-0.5 text-center font-mono">1</td>
+                    <td className="py-0.5 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.termFees.toFixed(2)} /-</td>
                   </tr>
                   <tr>
-                    <td className="py-1">4</td>
-                    <td className="py-1 font-bold">MS Fees :</td>
-                    <td className="py-1 text-right font-mono">INR {activeInvoiceModal.splitStructure.msFees.toFixed(2)} /-</td>
-                    <td className="py-1 text-center font-mono">1</td>
-                    <td className="py-1 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.msFees.toFixed(2)} /-</td>
+                    <td className="py-0.5">4</td>
+                    <td className="py-0.5 font-bold">MS Fees :</td>
+                    <td className="py-0.5 text-right font-mono">INR {activeInvoiceModal.splitStructure.msFees.toFixed(2)} /-</td>
+                    <td className="py-0.5 text-center font-mono">1</td>
+                    <td className="py-0.5 text-right font-mono font-bold">INR {activeInvoiceModal.splitStructure.msFees.toFixed(2)} /-</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Totals Block */}
-            <div className="flex justify-between items-start text-[11px]">
+            <div className="flex justify-between items-start text-[10px]">
               <div>
                 <p className="font-semibold text-slate-700">Transaction Mode:</p>
                 <p className="font-mono font-bold text-slate-900">{activeInvoiceModal.transactionId}</p>
               </div>
 
-              <div className="w-52 space-y-1 text-right">
+              <div className="w-48 space-y-0.5 text-right">
                 <div className="flex justify-between text-slate-600 font-semibold">
                   <span>Sub Total</span>
                   <span className="font-mono">{activeInvoiceModal.amount.toFixed(2)}/-</span>
                 </div>
-                <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-xs">
+                <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-0.5 text-[11px]">
                   <span>Total Paid</span>
                   <span className="font-mono">INR {activeInvoiceModal.amount.toFixed(2)}/-</span>
                 </div>
@@ -972,8 +972,8 @@ export default function FeeCollectionPage() {
             </div>
 
             {/* Student Account Balance Statement Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-1 text-[10px] font-semibold text-slate-700">
-              <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Student Account Balance Statement</p>
+            <div className="bg-slate-50 border border-slate-200 rounded-md p-2 space-y-0.5 text-[9px] font-semibold text-slate-700">
+              <p className="text-[8.5px] uppercase tracking-wider text-slate-400 font-bold">Student Account Balance Statement</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-0.5">
                   <p>Current Grade Fee Rate: <span className="font-mono text-slate-900 font-bold">{formatCurrency(invoiceGradeDemand)}</span></p>
@@ -991,16 +991,16 @@ export default function FeeCollectionPage() {
             </div>
 
             {/* Footer & Signatures */}
-            <div className="flex justify-between items-end pt-3 border-t border-slate-200 text-[10px]">
+            <div className="flex justify-between items-end pt-2 border-t border-slate-200 text-[9px]">
               <div>
                 <p className="font-bold text-slate-700">Terms &amp; Condition</p>
                 <p className="text-slate-500">This is software generated invoice. Signature is not mandatory.</p>
               </div>
 
               <div className="text-center space-y-0.5">
-                <div className="w-32 border-b border-slate-400"></div>
+                <div className="w-28 border-b border-slate-400"></div>
                 <p className="font-bold text-slate-700">Authorized person</p>
-                <p className="text-[9px] text-slate-500">(Seal &amp; Signature)</p>
+                <p className="text-[8.5px] text-slate-500">(Seal &amp; Signature)</p>
               </div>
             </div>
           </div>
@@ -1009,9 +1009,9 @@ export default function FeeCollectionPage() {
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             {/* Modal Box on Screen */}
-            <div className="bg-white border border-slate-300 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 max-h-[95vh] overflow-y-auto no-print">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <div className="bg-white border border-slate-300 rounded-2xl shadow-2xl max-w-2xl w-full p-5 space-y-3 max-h-[95vh] overflow-y-auto no-print">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-blue-600" />
                   Official Payment Receipt Preview
                 </h3>
@@ -1036,14 +1036,14 @@ export default function FeeCollectionPage() {
                   <button
                     type="button"
                     onClick={() => setActiveInvoiceModal(null)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl"
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2 rounded-xl"
                   >
                     Close
                   </button>
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-sm flex items-center gap-2"
                   >
                     <Printer className="w-4 h-4" />
                     Print Official Invoice (2 Copies A4)
@@ -1053,12 +1053,12 @@ export default function FeeCollectionPage() {
             </div>
 
             {/* Printable Container for 2 Copies on single A4 page */}
-            <div className="printable-receipt-area hidden print:block space-y-4">
+            <div className="printable-receipt-area hidden print:block space-y-2">
               {renderSingleCopy("SCHOOL COPY")}
 
               {/* Dotted Cut Line Separator */}
-              <div className="border-t-2 border-dashed border-slate-400 my-3 relative text-center">
-                <span className="bg-white px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest relative -top-2">
+              <div className="border-t-2 border-dashed border-slate-400 my-2 relative text-center">
+                <span className="bg-white px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest relative -top-2">
                   ✂ CUT ALONG DOTTED LINE — DUPLICATE COPY BELOW ✂
                 </span>
               </div>
