@@ -21,6 +21,7 @@ import {
   Landmark,
   TrendingUp,
   Megaphone,
+  Calendar,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -85,6 +86,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Notices & Circulars",
     href: "/notices",
     icon: <Megaphone className="w-4 h-4" />,
+  },
+  {
+    label: "Academic Planner",
+    href: "/planner",
+    icon: <Calendar className="w-4 h-4" />,
   },
   {
     label: "Notifications",
