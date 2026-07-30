@@ -200,9 +200,21 @@ export default function PromotionsPage() {
             <select
               value={selectedGrade}
               onChange={(e) => {
-                setSelectedGrade(e.target.value);
-                if (e.target.value === "Grade 4") setTargetGrade("Grade 5");
-                else if (e.target.value === "Grade 1") setTargetGrade("Grade 2");
+                const val = e.target.value;
+                setSelectedGrade(val);
+                if (val === "Grade 10") setTargetGrade("Graduated (Alumni / Passed Out)");
+                else if (val === "Grade 9") setTargetGrade("Grade 10");
+                else if (val === "Grade 8") setTargetGrade("Grade 9");
+                else if (val === "Grade 7") setTargetGrade("Grade 8");
+                else if (val === "Grade 6") setTargetGrade("Grade 7");
+                else if (val === "Grade 5") setTargetGrade("Grade 6");
+                else if (val === "Grade 4") setTargetGrade("Grade 5");
+                else if (val === "Grade 3") setTargetGrade("Grade 4");
+                else if (val === "Grade 2") setTargetGrade("Grade 3");
+                else if (val === "Grade 1") setTargetGrade("Grade 2");
+                else if (val === "Senior KG") setTargetGrade("Grade 1");
+                else if (val === "Junior KG") setTargetGrade("Senior KG");
+                else if (val === "Nursery") setTargetGrade("Junior KG");
               }}
               className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
             >
@@ -214,6 +226,11 @@ export default function PromotionsPage() {
               <option value="Grade 3">Grade 3 (Primary)</option>
               <option value="Grade 4">Grade 4 (Primary)</option>
               <option value="Grade 5">Grade 5 (Secondary)</option>
+              <option value="Grade 6">Grade 6 (Secondary)</option>
+              <option value="Grade 7">Grade 7 (Secondary)</option>
+              <option value="Grade 8">Grade 8 (Secondary)</option>
+              <option value="Grade 9">Grade 9 (Secondary)</option>
+              <option value="Grade 10">Grade 10 (Secondary - Passing Out)</option>
             </select>
           </div>
 
@@ -232,6 +249,11 @@ export default function PromotionsPage() {
               <option value="Grade 4">Grade 4 (Primary)</option>
               <option value="Grade 5">Grade 5 (Secondary - Wing Change)</option>
               <option value="Grade 6">Grade 6 (Secondary)</option>
+              <option value="Grade 7">Grade 7 (Secondary)</option>
+              <option value="Grade 8">Grade 8 (Secondary)</option>
+              <option value="Grade 9">Grade 9 (Secondary)</option>
+              <option value="Grade 10">Grade 10 (Secondary)</option>
+              <option value="Graduated (Alumni / Passed Out)">🎓 Graduated / Alumni (Old Student - Passout)</option>
             </select>
           </div>
 

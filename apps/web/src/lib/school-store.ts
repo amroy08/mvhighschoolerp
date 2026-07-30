@@ -55,11 +55,15 @@ export const ALL_SCHOOL_GRADES = [
   { id: "Grade 8", name: "Grade 8", wing: "SECONDARY" },
   { id: "Grade 9", name: "Grade 9", wing: "SECONDARY" },
   { id: "Grade 10", name: "Grade 10", wing: "SECONDARY" },
+  { id: "Graduated (Alumni / Passed Out)", name: "Graduated (Alumni / Passed Out)", wing: "SECONDARY" },
 ] as const;
 
 // Grade Fee Schedule Calculator according to Marwari Vidyalaya 2026-27 schedule
 export function calculateGradeDemand(gradeName: string, category: "NEW_ADMISSION" | "EXISTING" = "EXISTING"): number {
   const g = gradeName.toLowerCase();
+  if (g.includes("graduated") || g.includes("alumni") || g.includes("passout") || g.includes("passed out")) {
+    return 0; // Graduated students have no new grade tuition demand
+  }
   if (g.includes("nursery") || g.includes("jr kg") || g.includes("junior kg") || g.includes("sr kg") || g.includes("senior kg") || g.includes("pre-primary")) {
     return 29500;
   }
@@ -75,7 +79,7 @@ export function getWingForGrade(gradeName: string): "PRE-PRIMARY" | "PRIMARY" | 
   if (g.includes("nursery") || g.includes("jr kg") || g.includes("junior kg") || g.includes("sr kg") || g.includes("senior kg") || g.includes("pre-primary")) {
     return "PRE-PRIMARY";
   }
-  if (g.includes("5") || g.includes("6") || g.includes("7") || g.includes("8") || g.includes("9") || g.includes("10") || g.includes("secondary")) {
+  if (g.includes("5") || g.includes("6") || g.includes("7") || g.includes("8") || g.includes("9") || g.includes("10") || g.includes("secondary") || g.includes("graduated") || g.includes("alumni") || g.includes("passout")) {
     return "SECONDARY";
   }
   return "PRIMARY";

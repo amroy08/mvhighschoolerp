@@ -253,11 +253,15 @@ export default function StudentProfilePage() {
     localStorage.setItem(`mvhs_student_category_${student.id}`, promoCategory);
     localStorage.setItem(`mvhs_student_old_balance_${student.id}`, String(prevOutstanding));
 
+    const isGrad = promoTargetGrade.toLowerCase().includes("graduated") || promoTargetGrade.toLowerCase().includes("alumni") || promoTargetGrade.toLowerCase().includes("passed out");
+    const nextStatus = isGrad ? "PASSOUT" : student.currentStatus;
+
     const updated = {
       ...student,
       grade: promoTargetGrade,
       section: promoTargetSection,
       admissionCategory: promoCategory,
+      currentStatus: nextStatus,
     };
 
     saveStoredStudent({
@@ -276,13 +280,13 @@ export default function StudentProfilePage() {
       guardianName: updated.guardianName,
       guardianMobile: updated.guardianMobile,
       guardianEmail: updated.guardianEmail,
-      status: updated.currentStatus,
+      status: nextStatus,
       totalDemand: financials.demand,
     });
 
     setStudent(updated);
     setIsPromoting(false);
-    setToastMsg(`Student successfully promoted to ${promoTargetGrade} (${getWingForGrade(promoTargetGrade)} Wing)! Fee structure updated.`);
+    setToastMsg(isGrad ? `Student successfully marked as Graduated (Alumni / Passed Out)!` : `Student successfully promoted to ${promoTargetGrade} (${getWingForGrade(promoTargetGrade)} Wing)! Fee structure updated.`);
   };
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -785,6 +789,11 @@ export default function StudentProfilePage() {
                   <option value="Grade 4">Grade 4 (Primary Wing)</option>
                   <option value="Grade 5">Grade 5 (Secondary Wing - Rollover)</option>
                   <option value="Grade 6">Grade 6 (Secondary Wing)</option>
+                  <option value="Grade 7">Grade 7 (Secondary Wing)</option>
+                  <option value="Grade 8">Grade 8 (Secondary Wing)</option>
+                  <option value="Grade 9">Grade 9 (Secondary Wing)</option>
+                  <option value="Grade 10">Grade 10 (Secondary Wing)</option>
+                  <option value="Graduated (Alumni / Passed Out)">🎓 Graduated / Alumni (Old Student - Passout)</option>
                 </select>
               </div>
 
