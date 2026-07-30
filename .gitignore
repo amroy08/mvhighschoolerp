@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Environment files - NEVER commit these
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Turbo
+.turbo/
+
+# Test coverage
+coverage/
+
+# Prisma
+apps/api/prisma/migrations/*.sql.bak
+
+# Uploads (local dev only - use S3 in production)
+apps/api/uploads/
+apps/api/private_uploads/
+
+# Generated types
+*.d.ts.map
