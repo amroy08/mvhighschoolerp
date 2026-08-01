@@ -708,14 +708,58 @@ export default function StudentProfilePage() {
                         {uploadedDoc ? (
                           <div className="flex items-center gap-1.5">
                             <button
-                              onClick={() => alert(`Downloading ${uploadedDoc.name}...`)}
+                              onClick={() => alert(`Viewing & Downloading ${uploadedDoc.name}...`)}
                               className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 rounded-lg border border-blue-200"
+                              title="Download & View"
                             >
                               <Download className="w-3.5 h-3.5" />
                             </button>
+
+                            {/* Replace Option */}
+                            <label className="cursor-pointer text-amber-600 hover:text-amber-800 p-1.5 bg-amber-50 rounded-lg border border-amber-200 flex items-center justify-center" title="Replace Document">
+                              <Upload className="w-3.5 h-3.5" />
+                              <input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const oldId = uploadedDoc.id;
+                                    const newDoc: StudentDocumentItem = {
+                                      id: `doc_${slot.key}_${Date.now()}`,
+                                      name: file.name,
+                                      type: "PDF",
+                                      size: "1.2 MB",
+                                      uploadDate: new Date().toISOString().split("T")[0],
+                                    };
+                                    const filtered = documents.filter((d) => d.id !== oldId);
+                                    const updatedDocs = [newDoc, ...filtered];
+                                    setDocuments(updatedDocs);
+                                    localStorage.setItem(`mvhs_student_docs_${studentId}`, JSON.stringify(updatedDocs));
+                                    
+                                    if (student) {
+                                      const localList = getStoredStudents();
+                                      const updatedLocal = localList.map((s) => s.id === student.id ? {
+                                        ...s,
+                                        uploadedDocuments: (s.uploadedDocuments || []).filter((n: string) => n !== uploadedDoc.name).concat(newDoc.name),
+                                      } : s);
+                                      localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
+                                      setStudent({
+                                        ...student,
+                                        uploadedDocuments: (student.uploadedDocuments || []).filter((n: string) => n !== uploadedDoc.name).concat(newDoc.name),
+                                      });
+                                    }
+                                    setToastMsg(`Replaced ${slot.label} successfully!`);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+
                             <button
                               onClick={() => handleDeleteDocument(uploadedDoc.id)}
                               className="text-red-500 hover:text-red-750 p-1.5 bg-red-50 rounded-lg border border-red-200"
+                              title="Delete Document"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -766,59 +810,6 @@ export default function StudentProfilePage() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-
-            {/* Custom Documents Section */}
-            <div className="space-y-4 pt-2">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Additional / Custom Documents</h4>
-              
-              <form onSubmit={handleUploadDocument} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-3 items-center">
-                <input
-                  type="text"
-                  value={newDocName}
-                  onChange={(e) => setNewDocName(e.target.value)}
-                  placeholder="Document Title (e.g. Extra Certificate, Admit Card)..."
-                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-                <button
-                  type="submit"
-                  disabled={!newDocName.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload Custom
-                </button>
-              </form>
-
-              <div className="space-y-2">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between bg-white border border-slate-200 p-3.5 rounded-xl text-xs">
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="font-bold text-slate-900">{doc.name}</p>
-                        <p className="text-slate-400 text-[11px] font-mono">
-                          {doc.type} • {doc.size} • Uploaded {doc.uploadDate}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => alert(`Downloading ${doc.name}...`)}
-                        className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 rounded-lg border border-blue-200"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDocument(doc.id)}
-                        className="text-red-500 hover:text-red-750 p-1.5 bg-red-50 rounded-lg border border-red-200"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
