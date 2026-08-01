@@ -95,13 +95,17 @@ export default function StudentLedgerPage() {
           grNumber: match.grNumber,
           studentId: match.studentId,
           enrolments: [{ grade: { name: match.grade }, section: { name: match.section } }],
+          admissionCategory: match.admissionCategory,
         };
       }
     }
 
     if (found) {
       const gradeName = localStorage.getItem(`mvhs_student_grade_${found.id}`) || found.enrolments?.[0]?.grade?.name || "Grade 1";
-      const category = (localStorage.getItem(`mvhs_student_category_${found.id}`) as any) || "EXISTING";
+      const category =
+        (localStorage.getItem(`mvhs_student_category_${found.id}`) as any) ||
+        found.admissionCategory ||
+        (found.enrolments?.[0]?.admissionType === "NEW" ? "NEW_ADMISSION" : "EXISTING");
       const financials = calculateStudentFinancials({ id: found.id, grade: gradeName, admissionCategory: category });
       const payments = getStoredPayments(found.id);
 
