@@ -48,6 +48,16 @@ export default function StudentProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  const [role, setRole] = useState<string>("Admin");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole(localStorage.getItem("mvhs_user_role") || "Admin");
+    }
+  }, []);
+
+  const isClerk = role.toLowerCase().includes("clerk") || role.toLowerCase().includes("cashier");
+
   // Student Profile State
   const [student, setStudent] = useState<any>(null);
 
@@ -425,13 +435,15 @@ export default function StudentProfilePage() {
               <Edit2 className="w-4 h-4" />
               Edit Profile
             </button>
-            <button
-              onClick={() => setIsDeleting(true)}
-              className="inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
-            >
-              <Trash2 className="w-4 h-4 text-rose-600" />
-              Delete Student
-            </button>
+            {!isClerk && (
+              <button
+                onClick={() => setIsDeleting(true)}
+                className="inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                Delete Student
+              </button>
+            )}
           </div>
         </div>
       </div>

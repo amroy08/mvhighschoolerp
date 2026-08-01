@@ -48,6 +48,16 @@ export default function FeeCollectionPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  const [role, setRole] = useState<string>("Admin");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole(localStorage.getItem("mvhs_user_role") || "Admin");
+    }
+  }, []);
+
+  const isClerk = role.toLowerCase().includes("clerk") || role.toLowerCase().includes("cashier");
+
   const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI" | "CHEQUE" | "NEFT">("CASH");
   const [transactionRef, setTransactionRef] = useState("");
   const [amountInput, setAmountInput] = useState("");
@@ -772,8 +782,8 @@ export default function FeeCollectionPage() {
                         <th className="px-4 py-3 border-r border-sky-400/50">Split Structure</th>
                         <th className="px-3 py-3 border-r border-sky-400/50">Transaction Id</th>
                         <th className="px-3 py-3 border-r border-sky-400/50">View Receipt</th>
-                        <th className="px-3 py-3 border-r border-sky-400/50">Edit</th>
-                        <th className="px-3 py-3">Delete</th>
+                        {!isClerk && <th className="px-3 py-3 border-r border-sky-400/50">Edit</th>}
+                        {!isClerk && <th className="px-3 py-3">Delete</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 bg-white">
@@ -804,31 +814,35 @@ export default function FeeCollectionPage() {
                               View Receipt
                             </button>
                           </td>
-                          <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => alert(`Edit payment receipt ${p.invoiceNo}`)}
-                              className="text-sky-600 hover:text-sky-800 font-semibold hover:underline"
-                            >
-                              Edit
-                            </button>
-                          </td>
-                          <td className="px-3 py-3 text-center whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const remainingLogs = paymentHistory.filter((x) => x.id !== p.id);
-                                setPaymentHistory(remainingLogs);
-                                localStorage.setItem("mvhs_global_payments", JSON.stringify(remainingLogs));
-                                localStorage.setItem(`mvhs_payments_${currentStudent.id}`, JSON.stringify(remainingLogs));
-                                const newPaidTotal = remainingLogs.reduce((sum, item) => sum + item.amount, 0);
-                                setOutstandingTotal(Math.max(0, currentStudent.totalDemand - newPaidTotal));
-                              }}
-                              className="text-sky-600 hover:text-red-600 font-semibold hover:underline"
-                            >
-                              Delete
-                            </button>
-                          </td>
+                          {!isClerk && (
+                            <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => alert(`Edit payment receipt ${p.invoiceNo}`)}
+                                className="text-sky-600 hover:text-sky-800 font-semibold hover:underline"
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          )}
+                          {!isClerk && (
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const remainingLogs = paymentHistory.filter((x) => x.id !== p.id);
+                                  setPaymentHistory(remainingLogs);
+                                  localStorage.setItem("mvhs_global_payments", JSON.stringify(remainingLogs));
+                                  localStorage.setItem(`mvhs_payments_${currentStudent.id}`, JSON.stringify(remainingLogs));
+                                  const newPaidTotal = remainingLogs.reduce((sum, item) => sum + item.amount, 0);
+                                  setOutstandingTotal(Math.max(0, currentStudent.totalDemand - newPaidTotal));
+                                }}
+                                className="text-sky-600 hover:text-red-600 font-semibold hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

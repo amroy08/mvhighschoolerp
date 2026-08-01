@@ -217,8 +217,8 @@ export function Sidebar() {
 
   // Dynamically filter NAV_ITEMS based on role
   const filteredNavItems = NAV_ITEMS.map((item) => {
-    // If Clerk, Accountant, or Auditor, hide certain menus
-    if (isClerk || isAccountant || isAuditor) {
+    // If Accountant or Auditor, hide certain menus (Clerk sees everything)
+    if (isAccountant || isAuditor) {
       if (
         item.label === "Imports" ||
         item.label === "Promotions" ||
@@ -235,9 +235,6 @@ export function Sidebar() {
     if (item.children) {
       // Filter child items
       const filteredChildren = item.children.filter((child) => {
-        if (isClerk && child.label === "Fee Structures") {
-          return false; // Clerk cannot see or edit Fee Structures
-        }
         return true;
       });
       return { ...item, children: filteredChildren };
