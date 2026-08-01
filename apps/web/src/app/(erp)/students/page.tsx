@@ -44,7 +44,7 @@ export default function StudentsPage() {
     setIsLoading(true);
     try {
       const token = sessionStorage.getItem("access_token") ?? "";
-      const res = await fetch(`/api/v1/students?search=${encodeURIComponent(search)}`, {
+      const res = await fetch(`/api/v1/students?search=${encodeURIComponent(search)}&limit=1000`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

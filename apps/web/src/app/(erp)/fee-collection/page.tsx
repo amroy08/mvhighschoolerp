@@ -75,7 +75,7 @@ export default function FeeCollectionPage() {
     setGradeStudents([]);
     try {
       const token = sessionStorage.getItem("access_token") ?? "";
-      const res = await fetch("/api/v1/students", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch("/api/v1/students?limit=1000", { headers: { Authorization: `Bearer ${token}` } });
       let apiStudents: any[] = [];
       if (res.ok) {
         const data = await res.json();
@@ -326,7 +326,34 @@ export default function FeeCollectionPage() {
     if (!currentStudent) return;
     setIsSubmitting(true);
     const paidAmt = parseFloat(amountInput) || 0;
+
+    // Validation: amount must be positive
     if (paidAmt <= 0) {
+      alert("Please enter a valid payment amount greater than ₹0.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validation: amount cannot exceed outstanding
+    if (paidAmt > outstandingTotal) {
+      alert(`Payment amount (₹${paidAmt.toLocaleString("en-IN")}) exceeds the outstanding balance (₹${outstandingTotal.toLocaleString("en-IN")}). Please enter an amount up to the outstanding amount.`);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validation: payment mode specific checks
+    if (paymentMode === "UPI" && !transactionRef.trim()) {
+      alert("UPI Transaction ID / UTR is required for UPI payments.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (paymentMode === "CHEQUE" && !transactionRef.trim()) {
+      alert("Cheque Number is required for cheque payments.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (paymentMode === "NEFT" && !transactionRef.trim()) {
+      alert("Bank UTR / Reference Number is required for NEFT payments.");
       setIsSubmitting(false);
       return;
     }
@@ -368,12 +395,41 @@ export default function FeeCollectionPage() {
 
     let allocatedMS = Math.min(remaining, msFeesVal);
 
-    const nextInvoiceNo = `MVHS#00${1252 + paymentHistory.length + 1}`;
+    // ─── Try to post payment to backend API first ───
+    let apiReceiptNo: string | null = null;
+    let apiPaymentId: string | null = null;
+    try {
+      const token = sessionStorage.getItem("access_token") ?? "";
+      const apiRes = await fetch("/api/v1/payments/collect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          studentId: currentStudent.id,
+          amountReceived: paidAmt,
+          paymentMode: paymentMode,
+          transactionReference: transactionRef || undefined,
+          remarks: remarks || "Counter Fee Payment",
+        }),
+      });
+
+      if (apiRes.ok) {
+        const apiJson = await apiRes.json();
+        apiReceiptNo = apiJson.data?.receipt?.receiptNumber || null;
+        apiPaymentId = apiJson.data?.payment?.id || null;
+      }
+    } catch {
+      // API not reachable — fall back to localStorage
+    }
+
+    const nextInvoiceNo = apiReceiptNo || `MVHS#00${1252 + paymentHistory.length + 1}`;
     const todayStr = new Date().toISOString().split("T")[0];
 
     const newLog: PaymentLogStore = {
       srNo: paymentHistory.length + 1,
-      id: `p_${Date.now()}`,
+      id: apiPaymentId || `p_${Date.now()}`,
       studentId: currentStudent.id,
       invoiceNo: nextInvoiceNo,
       paidDate: todayStr,
@@ -412,7 +468,7 @@ export default function FeeCollectionPage() {
           Marwari Vidyalaya Fee Collection Counter
         </h1>
         <p className="text-slate-500 text-sm mt-1">
-          Search student by GR Number or Name, post payments with automatic fee head split allocation, and issue official invoices
+          Search student by GR Number or Name, post payments with automatic fee head split allocation, and generate official fee receipts
         </p>
       </div>
 
@@ -702,7 +758,7 @@ export default function FeeCollectionPage() {
 
               {paymentHistory.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 text-xs font-semibold">
-                  No payment receipts issued for this student yet. Post a payment on the right to generate an invoice.
+                  No payment receipts issued for this student yet. Post a payment on the right to generate a fee receipt.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -715,7 +771,7 @@ export default function FeeCollectionPage() {
                         <th className="px-3 py-3 border-r border-sky-400/50">Amount</th>
                         <th className="px-4 py-3 border-r border-sky-400/50">Split Structure</th>
                         <th className="px-3 py-3 border-r border-sky-400/50">Transaction Id</th>
-                        <th className="px-3 py-3 border-r border-sky-400/50">View invoice</th>
+                        <th className="px-3 py-3 border-r border-sky-400/50">View Receipt</th>
                         <th className="px-3 py-3 border-r border-sky-400/50">Edit</th>
                         <th className="px-3 py-3">Delete</th>
                       </tr>
@@ -745,13 +801,13 @@ export default function FeeCollectionPage() {
                               className="text-sky-600 hover:text-sky-800 font-semibold hover:underline flex items-center justify-center gap-1 mx-auto"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              View Invoice
+                              View Receipt
                             </button>
                           </td>
                           <td className="px-3 py-3 border-r border-slate-100 text-center whitespace-nowrap">
                             <button
                               type="button"
-                              onClick={() => alert(`Edit payment invoice ${p.invoiceNo}`)}
+                              onClick={() => alert(`Edit payment receipt ${p.invoiceNo}`)}
                               className="text-sky-600 hover:text-sky-800 font-semibold hover:underline"
                             >
                               Edit
@@ -852,7 +908,7 @@ export default function FeeCollectionPage() {
                 </>
               ) : (
                 <>
-                  Post Payment & Issue Invoice
+                  Post Payment & Generate Receipt
                   <Receipt className="w-4 h-4" />
                 </>
               )}
@@ -883,7 +939,7 @@ export default function FeeCollectionPage() {
             <div className="text-center space-y-1 border-b border-slate-200 pb-2">
               <SchoolLogo className="w-12 h-12 mx-auto drop-shadow-sm" />
               <h2 className="text-base font-black text-slate-900 uppercase tracking-wide leading-tight mt-0.5">
-                MARWARI VIDYALAYA SANCHILIT
+                MARWARI VIDYALAYA HIGH SCHOOL
               </h2>
               <p className="text-[9px] text-slate-600 max-w-md mx-auto leading-tight">
                 463-475, S.V.P. ROAD, PRARTHNA SAMAJ, Charni Road, Opera House, Mumbai, Maharashtra 400004
@@ -893,8 +949,8 @@ export default function FeeCollectionPage() {
             {/* Metadata Bar */}
             <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-700">
               <div className="space-y-0.5">
-                <p>Invoice Date : <span className="font-mono text-slate-900 font-bold">{activeInvoiceModal.paidDate}</span></p>
-                <p>Invoice No : <span className="font-mono text-slate-900 font-bold">{activeInvoiceModal.invoiceNo}</span></p>
+                <p>Receipt Date : <span className="font-mono text-slate-900 font-bold">{activeInvoiceModal.paidDate}</span></p>
+                <p>Receipt No : <span className="font-mono text-slate-900 font-bold">{activeInvoiceModal.invoiceNo}</span></p>
                 <p>Tel: <span className="text-slate-600 font-normal">02386845 / 47836669</span></p>
                 <p>Email : <span className="text-slate-600 font-normal">mawari.vidyalaya@gmail.com</span></p>
               </div>
@@ -994,7 +1050,7 @@ export default function FeeCollectionPage() {
             <div className="flex justify-between items-end pt-2 border-t border-slate-200 text-[9px]">
               <div>
                 <p className="font-bold text-slate-700">Terms &amp; Condition</p>
-                <p className="text-slate-500">This is software generated invoice. Signature is not mandatory.</p>
+                <p className="text-slate-500">This is a computer-generated fee receipt. Signature is not mandatory.</p>
               </div>
 
               <div className="text-center space-y-0.5">
@@ -1046,7 +1102,7 @@ export default function FeeCollectionPage() {
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-sm flex items-center gap-2"
                   >
                     <Printer className="w-4 h-4" />
-                    Print Official Invoice (2 Copies A4)
+                    Print Official Fee Receipt (2 Copies A4)
                   </button>
                 </div>
               </div>

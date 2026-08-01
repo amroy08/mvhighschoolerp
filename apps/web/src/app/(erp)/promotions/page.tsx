@@ -37,8 +37,41 @@ export default function PromotionsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [dbGrades, setDbGrades] = useState<any[]>([]);
+  const [academicYears, setAcademicYears] = useState<any[]>([]);
+
+  // Load master data from API on mount
+  useEffect(() => {
+    const loadMasters = async () => {
+      try {
+        const token = sessionStorage.getItem("access_token") ?? "";
+        
+        // Fetch Grades
+        const gradesRes = await fetch("/api/v1/grades", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (gradesRes.ok) {
+          const json = await gradesRes.json();
+          setDbGrades(json.data || []);
+        }
+
+        // Fetch Academic Years
+        const ayRes = await fetch("/api/v1/academic-years", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (ayRes.ok) {
+          const json = await ayRes.json();
+          setAcademicYears(json.data || []);
+        }
+      } catch {
+        // Fallback to offline defaults
+      }
+    };
+    loadMasters();
+  }, []);
 
   useEffect(() => {
     fetchCandidates();
@@ -46,9 +79,11 @@ export default function PromotionsPage() {
 
   const fetchCandidates = async () => {
     setIsLoading(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
     try {
       const token = sessionStorage.getItem("access_token") ?? "";
-      const res = await fetch("/api/v1/students", {
+      const res = await fetch("/api/v1/students?limit=1000", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -113,21 +148,37 @@ export default function PromotionsPage() {
     if (candidates.length === 0) return;
     setIsSubmitting(true);
     setSuccessMessage(null);
+    setErrorMessage(null);
+
+    // Resolve target section name ("Section A" -> "A")
+    const secName = targetSection.toLowerCase().includes("b") ? "B" : "A";
+
+    // Resolve academic years (from 2025-26 to 2026-27 by default, or look them up)
+    const fromAY = academicYears.find((ay) => ay.name === "2025-26") || { id: "00000000-0000-0000-0000-000000000010" };
+    const toAY = academicYears.find((ay) => ay.name === "2026-27") || { id: "00000000-0000-0000-0000-000000000011" };
+
+    // Resolve grade UUIDs from database list
+    const fromGradeObj = dbGrades.find((g) => g.name.toLowerCase() === selectedGrade.toLowerCase());
+    const toGradeObj = dbGrades.find((g) => g.name.toLowerCase() === targetGrade.toLowerCase());
+    const toSectionObj = toGradeObj?.sections?.find((s: any) => s.name.toUpperCase() === secName);
+
+    if (!fromGradeObj || !toGradeObj || !toSectionObj) {
+      setErrorMessage(`Cannot execute rollover. Grade/Section mapping mismatch in database. Ensure "${selectedGrade}" and "${targetGrade}" Section "${secName}" exist in the system.`);
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const token = sessionStorage.getItem("access_token") ?? "";
       const payload = {
-        fromGrade: selectedGrade,
-        toGrade: targetGrade,
-        toSection: targetSection,
-        candidates: candidates.map((c) => ({
-          studentId: c.studentId,
-          action: c.action,
-          targetFeeCategory: c.targetFeeCategory,
-        })),
+        fromAcademicYearId: fromAY.id,
+        toAcademicYearId: toAY.id,
+        fromGradeId: fromGradeObj.id,
+        toGradeId: toGradeObj.id,
+        toSectionId: toSectionObj.id,
       };
 
-      await fetch("/api/v1/promotions/batch", {
+      const res = await fetch("/api/v1/promotions/batch", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -135,31 +186,37 @@ export default function PromotionsPage() {
         },
         body: JSON.stringify(payload),
       });
+
+      if (res.ok) {
+        // Update local storage assignments for pages that still read from it
+        candidates.forEach((c) => {
+          if (c.action === "PROMOTE") {
+            const financials = calculateStudentFinancials({
+              id: c.studentId,
+              grade: selectedGrade,
+              admissionCategory: (localStorage.getItem(`mvhs_student_category_${c.studentId}`) as any) || "EXISTING",
+            });
+            const prevOutstanding = financials.outstanding;
+
+            localStorage.setItem(`mvhs_student_grade_${c.studentId}`, targetGrade);
+            localStorage.setItem(`mvhs_student_category_${c.studentId}`, c.targetFeeCategory);
+            localStorage.setItem(`mvhs_student_old_balance_${c.studentId}`, String(prevOutstanding));
+          }
+        });
+
+        const promotedCount = candidates.filter((c) => c.action === "PROMOTE").length;
+        const detainedCount = candidates.filter((c) => c.action === "DETAIN").length;
+
+        setSuccessMessage(
+          `Batch execution complete! ${promotedCount} student(s) promoted to ${targetGrade} (${getWingForGrade(targetGrade)} Wing) and ${detainedCount} student(s) retained in current standard.`
+        );
+      } else {
+        const errJson = await res.json().catch(() => null);
+        setErrorMessage(errJson?.message || `Failed to execute batch promotion on the database (Server Error ${res.status}).`);
+      }
     } catch {
-      // Fallback
+      setErrorMessage("Network error — could not reach the promotions server.");
     } finally {
-      // Save updated grade assignments in localStorage store
-      candidates.forEach((c) => {
-        if (c.action === "PROMOTE") {
-          const financials = calculateStudentFinancials({
-            id: c.studentId,
-            grade: selectedGrade,
-            admissionCategory: (localStorage.getItem(`mvhs_student_category_${c.studentId}`) as any) || "EXISTING",
-          });
-          const prevOutstanding = financials.outstanding;
-
-          localStorage.setItem(`mvhs_student_grade_${c.studentId}`, targetGrade);
-          localStorage.setItem(`mvhs_student_category_${c.studentId}`, c.targetFeeCategory);
-          localStorage.setItem(`mvhs_student_old_balance_${c.studentId}`, String(prevOutstanding));
-        }
-      });
-
-      const promotedCount = candidates.filter((c) => c.action === "PROMOTE").length;
-      const detainedCount = candidates.filter((c) => c.action === "DETAIN").length;
-
-      setSuccessMessage(
-        `Batch execution complete! ${promotedCount} student(s) promoted to ${targetGrade} (${getWingForGrade(targetGrade)} Wing) and ${detainedCount} student(s) retained in current standard.`
-      );
       setIsSubmitting(false);
     }
   };
@@ -182,6 +239,14 @@ export default function PromotionsPage() {
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 shadow-sm">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
           <p className="text-sm font-semibold">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Error Alert */}
+      {errorMessage && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 text-red-800 shadow-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+          <p className="text-sm font-semibold">{errorMessage}</p>
         </div>
       )}
 

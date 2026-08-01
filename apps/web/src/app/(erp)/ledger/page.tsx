@@ -223,7 +223,7 @@ export default function StudentLedgerPage() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-center space-y-2">
             <SchoolLogo className="w-16 h-16 mx-auto drop-shadow-sm" />
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-wide">
-              MARWARI VIDYALAYA SANCHILIT
+              MARWARI VIDYALAYA HIGH SCHOOL
             </h2>
             <p className="text-xs text-slate-500 max-w-lg mx-auto">
               463-475, S.V.P. ROAD, PRARTHNA SAMAJ, Charni Road, Opera House, Mumbai, Maharashtra 400004

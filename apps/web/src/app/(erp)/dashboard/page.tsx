@@ -56,7 +56,7 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
       const token = sessionStorage.getItem("access_token") ?? "";
-      const res = await fetch("/api/v1/students", {
+      const res = await fetch("/api/v1/students?limit=1000", {
         headers: { Authorization: `Bearer ${token}` },
       });
 

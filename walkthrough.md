@@ -140,6 +140,19 @@ All 13 R&D planning documents are in `docs/`:
 
 ---
 
+## 10. August 2026 Production-Readiness Audit & Overhaul (COMPLETE)
+
+We performed a deep audit of the code and solved the critical local-storage decoupling problem:
+- **Database Mapping**: Implemented a new `/api/v1/grades` and `/api/v1/academic-years` API to dynamically map class names and academic years to their corresponding PostgreSQL UUIDs.
+- **Wizard Integration**: Admissions now fetches these UUIDs dynamically and performs a transactional `POST /api/v1/students`. Duplicate-prone random GR generation has been replaced with sequential DB-backed counter generation.
+- **Collection Counter**: Fee collection now attempts transaction collection via `POST /api/v1/payments/collect` first, utilizing the PostgreSQL advisory locks and generating sequential receipt sequences in the DB.
+- **Promotions & Rollover**: Promotions page is now fully integrated with `/api/v1/promotions/batch` by dynamically mapping grade and section names to database IDs.
+- **Legacy Excel Imports**: Updated the Vantage Excel import pipeline to look up grade and section UUIDs dynamically from the API, storing all imported students correctly into the PostgreSQL database.
+- **Data Truncation Fixes**: Appended `limit=1000` to all student query endpoints on the frontend (Dashboard, Outstandings, Student Directory, Reports, Analytics, Promotions, and Enrolments) to ensure full accuracy of reports and metrics for up to 1000 students (supporting the school's 570 students).
+- **Aesthetic & Validation Cleanups**: Fixed school naming across Ledger and receipt prints, removed generic terminology ("invoices" -> "receipts"), added strict payment amount checks (prevents overpayment/negative amounts), and payment-mode specific validations (UPI requires UTR reference, Cheques require numbers).
+
+---
+
 ## Standard Development Credentials
 
 | Role | Email | Password |

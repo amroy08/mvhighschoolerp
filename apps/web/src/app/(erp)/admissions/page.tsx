@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   UserPlus,
@@ -14,13 +14,40 @@ import {
   User,
   CreditCard,
 } from "lucide-react";
-import { saveStoredStudent, ALL_SCHOOL_GRADES } from "@/lib/school-store";
+import { saveStoredStudent, ALL_SCHOOL_GRADES, getWingForGrade, calculateGradeDemand } from "@/lib/school-store";
+
+interface GradeOption {
+  id: string;
+  name: string;
+  department: { id: string; name: string; code: string };
+  sections: { id: string; name: string }[];
+}
 
 export default function AdmissionsPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dbGrades, setDbGrades] = useState<GradeOption[]>([]);
+
+  // Fetch grades from DB on mount
+  useEffect(() => {
+    const fetchGrades = async () => {
+      try {
+        const token = sessionStorage.getItem("access_token") ?? "";
+        const res = await fetch("/api/v1/grades", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setDbGrades(json.data || []);
+        }
+      } catch {
+        // Grades will use fallback ALL_SCHOOL_GRADES for display
+      }
+    };
+    fetchGrades();
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -61,32 +88,41 @@ export default function AdmissionsPage() {
     setError(null);
     setIsSubmitting(true);
 
-    const studentId = `s_${Date.now()}`;
-    const newGrNumber = `GR-00100${Math.floor(Math.random() * 90) + 10}`;
+    // Validation
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError("Student first name and last name are required.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.guardianFirstName.trim()) {
+      setError("Guardian first name is required.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.guardianMobile.trim() || formData.guardianMobile.replace(/[^0-9]/g, "").length !== 10) {
+      setError("A valid 10-digit mobile number is required for the guardian.");
+      setIsSubmitting(false);
+      return;
+    }
 
-    const newStudentObj = {
-      id: studentId,
-      grNumber: newGrNumber,
-      studentId: `MVHS-2026-${Math.floor(Math.random() * 90000) + 10000}`,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      fullName: `${formData.firstName} ${formData.lastName}`,
-      gender: formData.gender,
-      dateOfBirth: formData.dateOfBirth,
-      grade: formData.gradeName,
-      section: formData.sectionName,
-      wing: "PRIMARY" as any,
-      admissionCategory: formData.admissionType === "NEW" ? ("NEW_ADMISSION" as const) : ("EXISTING" as const),
-      guardianName: `${formData.guardianFirstName} ${formData.guardianLastName}`.trim() || "Parent",
-      guardianMobile: formData.guardianMobile || "9876543210",
-      guardianEmail: formData.guardianEmail,
-      status: "ACTIVE",
-      totalDemand: formData.admissionType === "NEW" ? 25500 : 23500,
-    };
+    // Lookup grade/section IDs from DB data
+    const dbGrade = dbGrades.find((g) => g.name === formData.gradeName);
+    const dbSection = dbGrade?.sections.find((s) => s.name === formData.sectionName);
+
+    const gradeId = dbGrade?.id;
+    const sectionId = dbSection?.id;
+
+    if (!gradeId || !sectionId) {
+      setError(`Could not find Grade "${formData.gradeName}" Section "${formData.sectionName}" in the database. Please contact admin.`);
+      setIsSubmitting(false);
+      return;
+    }
+
+    const wing = getWingForGrade(formData.gradeName);
+    const admissionCategory = formData.admissionType === "NEW" ? ("NEW_ADMISSION" as const) : ("EXISTING" as const);
+    const totalDemand = calculateGradeDemand(formData.gradeName, admissionCategory);
 
     try {
-      saveStoredStudent(newStudentObj);
-
       const payload = {
         firstName: formData.firstName,
         middleName: formData.middleName || undefined,
@@ -101,8 +137,8 @@ export default function AdmissionsPage() {
         addressState: formData.addressState,
         addressPincode: formData.addressPincode,
         aadhaarNumber: formData.aadhaarNumber || undefined,
-        gradeId: "00000000-0000-0000-0002-000000000004",
-        sectionId: "00000000-0000-0000-0003-000000000007",
+        gradeId,
+        sectionId,
         rollNumber: formData.rollNumber || undefined,
         admissionType: formData.admissionType,
         primaryGuardian: {
@@ -118,7 +154,7 @@ export default function AdmissionsPage() {
 
       const token = sessionStorage.getItem("access_token") ?? "";
 
-      await fetch("/api/v1/students", {
+      const res = await fetch("/api/v1/students", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,11 +162,45 @@ export default function AdmissionsPage() {
         },
         body: JSON.stringify(payload),
       });
-    } catch {
-      // Handled via local storage save
+
+      if (res.ok) {
+        const json = await res.json();
+        const apiStudent = json.data;
+
+        // Also save to localStorage for pages that still read from it
+        saveStoredStudent({
+          id: apiStudent.id,
+          grNumber: apiStudent.grNumber,
+          studentId: apiStudent.studentId,
+          firstName: apiStudent.firstName,
+          lastName: apiStudent.lastName,
+          fullName: apiStudent.fullName,
+          gender: apiStudent.gender,
+          dateOfBirth: formData.dateOfBirth,
+          grade: formData.gradeName,
+          section: formData.sectionName,
+          wing,
+          admissionCategory,
+          guardianName: `${formData.guardianFirstName} ${formData.guardianLastName}`.trim(),
+          guardianMobile: formData.guardianMobile,
+          guardianEmail: formData.guardianEmail,
+          status: "ACTIVE",
+          totalDemand,
+        });
+
+        // Store category for financial calculations
+        localStorage.setItem(`mvhs_student_category_${apiStudent.id}`, admissionCategory);
+
+        router.push("/students");
+      } else {
+        const errJson = await res.json().catch(() => null);
+        const errMsg = errJson?.message || `Server error (${res.status}). Please try again.`;
+        setError(errMsg);
+      }
+    } catch (err) {
+      setError("Network error — could not reach the server. Please check your connection.");
     } finally {
       setIsSubmitting(false);
-      router.push("/students");
     }
   };
 

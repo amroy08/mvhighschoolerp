@@ -89,6 +89,20 @@ export default function ImportsPage() {
       let grandTotalStudents = 0;
       const token = sessionStorage.getItem("access_token") ?? "";
 
+      // Load grades from API to map class/section dynamically
+      let dbGradesList: any[] = [];
+      try {
+        const gradesRes = await fetch("/api/v1/grades", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (gradesRes.ok) {
+          const resJson = await gradesRes.json();
+          dbGradesList = resJson.data || [];
+        }
+      } catch {
+        // Fallback to empty list (will use defaults)
+      }
+
       // Deduplicate existing before adding if wanted, but we will overwrite deterministically anyway
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
@@ -203,6 +217,14 @@ export default function ImportsPage() {
             }
           }
 
+          // Dynamic lookup of gradeId and sectionId from API
+          const matchedDbGrade = dbGradesList.find((g) => g.name.toLowerCase() === gradeName.toLowerCase());
+          const matchedDbSection = matchedDbGrade?.sections?.find((s: any) => s.name.toLowerCase() === sectionName.toLowerCase());
+
+          // Default fallback IDs (from seed data) in case database lacks a specific grade/section
+          const finalGradeId = matchedDbGrade?.id || "00000000-0000-0000-0002-000000000004";
+          const finalSectionId = matchedDbSection?.id || "00000000-0000-0000-0003-000000000007";
+
           // Use deterministic GR Number and Student ID based on SN column & Grade name to prevent double entries on re-import
           const snVal = parseInt(row[colIdx.sn >= 0 ? colIdx.sn : 0]) || r;
           let gradePrefix = "5";
@@ -291,8 +313,8 @@ export default function ImportsPage() {
               addressCity: "Mumbai",
               addressState: "Maharashtra",
               addressPincode: "400004",
-              gradeId: "00000000-0000-0000-0002-000000000004",
-              sectionId: "00000000-0000-0000-0003-000000000007",
+              gradeId: finalGradeId,
+              sectionId: finalSectionId,
               admissionType: category === "NEW_ADMISSION" ? "NEW" : "EXISTING",
               primaryGuardian: {
                 firstName: "Parent",
