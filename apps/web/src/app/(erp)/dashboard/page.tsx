@@ -66,23 +66,7 @@ export default function DashboardPage() {
         apiStudents = data.data || [];
       }
 
-      if (res.ok && apiStudents.length === 0) {
-        localStorage.removeItem("mvhs_local_students");
-        localStorage.removeItem("mvhs_global_payments");
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i) || "";
-          if (
-            key.startsWith("mvhs_payments_") ||
-            key.startsWith("mvhs_student_grade_") ||
-            key.startsWith("mvhs_student_category_") ||
-            key.startsWith("mvhs_student_old_balance_")
-          ) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach((key) => localStorage.removeItem(key));
-      }
+
 
       const localStudents = getStoredStudents();
       const map = new Map<string, any>();

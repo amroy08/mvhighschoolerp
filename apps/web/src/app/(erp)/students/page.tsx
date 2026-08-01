@@ -70,19 +70,7 @@ export default function StudentsPage() {
           };
         });
 
-        // Auto-sync clean/purged database state to local storage
-        if (search.trim() === "" && apiStudents.length === 0) {
-          localStorage.removeItem("mvhs_local_students");
-          localStorage.removeItem("mvhs_global_payments");
-          const keysToRemove: string[] = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i) || "";
-            if (key.startsWith("mvhs_payments_") || key.startsWith("mvhs_student_grade_") || key.startsWith("mvhs_student_category_") || key.startsWith("mvhs_student_old_balance_")) {
-              keysToRemove.push(key);
-            }
-          }
-          keysToRemove.forEach((k) => localStorage.removeItem(k));
-        }
+
       }
 
       const localStudents = getStoredStudents();
