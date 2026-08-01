@@ -19,6 +19,8 @@ import {
   CheckSquare,
   Square,
   Filter,
+  Copy,
+  ClipboardCheck,
 } from "lucide-react";
 import { ALL_SCHOOL_GRADES, getStoredStudents } from "@/lib/school-store";
 
@@ -66,6 +68,7 @@ export default function NoticesPage() {
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [broadcastIndex, setBroadcastIndex] = useState(0);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -192,6 +195,35 @@ export default function NoticesPage() {
 
   const deleteNotice = (id: string) => {
     saveNotices(notices.filter((n) => n.id !== id));
+  };
+
+  // Copy notice text for WhatsApp Group
+  const copyGroupMessage = (notice: Notice) => {
+    const date = new Date(notice.createdAt).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    const pdfLine = notice.pdfName
+      ? `\n\n📎 *Attachment:* ${notice.pdfName}\n_(Please see the attached file shared separately)_`
+      : "";
+    const targetLine = targetLabel(notice);
+
+    const msg =
+      `📢 *MARWARI VIDYALAYA HIGH SCHOOL*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `*${notice.title.toUpperCase()}*\n\n` +
+      `${notice.description}` +
+      pdfLine +
+      `\n\n🎯 *For:* ${targetLine}` +
+      `\n📅 *Date:* ${date}` +
+      `\n\n— *MVHS Administration*\n` +
+      `_Marwari Vidyalaya High School, Mumbai_`;
+
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopiedId(notice.id);
+      setTimeout(() => setCopiedId(null), 3000);
+    });
   };
 
   // Open broadcast modal
@@ -359,12 +391,34 @@ export default function NoticesPage() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Copy for WhatsApp Group */}
+                  <button
+                    onClick={() => copyGroupMessage(n)}
+                    className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                      copiedId === n.id
+                        ? "text-violet-700 bg-violet-100 border-violet-300"
+                        : "text-violet-700 bg-violet-50 hover:bg-violet-100 border-violet-200"
+                    }`}
+                    title="Copy formatted message to paste into your school WhatsApp group"
+                  >
+                    {copiedId === n.id ? (
+                      <>
+                        <ClipboardCheck className="w-3.5 h-3.5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy for Group
+                      </>
+                    )}
+                  </button>
                   <button
                     onClick={() => openBroadcast(n)}
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Broadcast WhatsApp
+                    Individual WA
                   </button>
                   <button
                     onClick={() => deleteNotice(n.id)}
