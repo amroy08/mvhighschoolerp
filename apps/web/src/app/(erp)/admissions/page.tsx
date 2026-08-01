@@ -354,7 +354,7 @@ export default function AdmissionsPage() {
       )}
 
       {/* Spacious Form Card */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm space-y-6">
         {step === 1 && (
           <div className="space-y-6">
             <h3 className="text-sm font-bold text-slate-950 border-b border-slate-100 pb-3.5 flex items-center gap-2">
@@ -880,7 +880,7 @@ export default function AdmissionsPage() {
             </div>
           </div>
         )}
-      </div>
+      </form>
     </div>
   );
 }
