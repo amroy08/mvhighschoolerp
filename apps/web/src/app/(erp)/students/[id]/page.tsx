@@ -77,6 +77,9 @@ export default function StudentProfilePage() {
   const [editGuardianMobile, setEditGuardianMobile] = useState("");
   const [editGuardianEmail, setEditGuardianEmail] = useState("");
   const [editAddress, setEditAddress] = useState("");
+  const [editFatherName, setEditFatherName] = useState("");
+  const [editMotherName, setEditMotherName] = useState("");
+  const [editGuardianRelationship, setEditGuardianRelationship] = useState("FATHER");
 
   // Promotion Modal State
   const [promoTargetGrade, setPromoTargetGrade] = useState("Grade 2");
@@ -92,6 +95,17 @@ export default function StudentProfilePage() {
 
   useEffect(() => {
     fetchStudentProfile();
+    if (studentId) {
+      const storedDocs = localStorage.getItem(`mvhs_student_docs_${studentId}`);
+      if (storedDocs) {
+        setDocuments(JSON.parse(storedDocs));
+      } else {
+        setDocuments([
+          { id: "doc1", name: "Aadhaar Card.pdf", type: "PDF", size: "1.2 MB", uploadDate: "2026-07-30" },
+          { id: "doc2", name: "Birth Certificate.pdf", type: "PDF", size: "850 KB", uploadDate: "2026-07-30" },
+        ]);
+      }
+    }
   }, [studentId]);
 
   const fetchStudentProfile = async () => {
@@ -137,7 +151,18 @@ export default function StudentProfilePage() {
             guardianMobile: s.guardians?.[0]?.guardian?.mobile || "N/A",
             guardianEmail: s.guardians?.[0]?.guardian?.email || "",
             guardianRelationship: s.guardians?.[0]?.relationship || "FATHER",
+            fatherName: "",
+            motherName: "",
+            uploadedDocuments: [],
           };
+          const localList = getStoredStudents();
+          const localMatch = localList.find((ls) => ls.id === s.id);
+          if (localMatch) {
+            foundStudent.fatherName = localMatch.fatherName || "";
+            foundStudent.motherName = localMatch.motherName || "";
+            foundStudent.guardianRelationship = localMatch.guardianRelationship || foundStudent.guardianRelationship;
+            foundStudent.uploadedDocuments = localMatch.uploadedDocuments || [];
+          }
         }
       }
     } catch {
@@ -173,7 +198,10 @@ export default function StudentProfilePage() {
           guardianName: localMatch.guardianName || "Parent",
           guardianMobile: localMatch.guardianMobile || "N/A",
           guardianEmail: localMatch.guardianEmail || "",
-          guardianRelationship: "FATHER",
+          guardianRelationship: localMatch.guardianRelationship || "FATHER",
+          fatherName: localMatch.fatherName || "",
+          motherName: localMatch.motherName || "",
+          uploadedDocuments: localMatch.uploadedDocuments || [],
         };
       }
     }
@@ -188,6 +216,9 @@ export default function StudentProfilePage() {
       setEditGuardianMobile(foundStudent.guardianMobile);
       setEditGuardianEmail(foundStudent.guardianEmail);
       setEditAddress(foundStudent.addressLine1);
+      setEditFatherName(foundStudent.fatherName || "");
+      setEditMotherName(foundStudent.motherName || "");
+      setEditGuardianRelationship(foundStudent.guardianRelationship || "FATHER");
     }
     setIsLoading(false);
   };
@@ -207,6 +238,9 @@ export default function StudentProfilePage() {
       guardianName: editGuardianName,
       guardianMobile: editGuardianMobile,
       guardianEmail: editGuardianEmail,
+      guardianRelationship: editGuardianRelationship,
+      fatherName: editFatherName,
+      motherName: editMotherName,
       addressLine1: editAddress,
     };
 
@@ -226,6 +260,11 @@ export default function StudentProfilePage() {
       guardianName: editGuardianName,
       guardianMobile: editGuardianMobile,
       guardianEmail: editGuardianEmail,
+      guardianRelationship: editGuardianRelationship,
+      fatherName: editFatherName || undefined,
+      motherName: editMotherName || undefined,
+      notificationMobile: editGuardianMobile,
+      uploadedDocuments: student.uploadedDocuments || [],
       status: updated.currentStatus,
       totalDemand: financials.demand,
     });
@@ -345,13 +384,32 @@ export default function StudentProfilePage() {
       uploadDate: new Date().toISOString().split("T")[0],
     };
 
-    setDocuments([newDoc, ...documents]);
+    const updatedDocs = [newDoc, ...documents];
+    setDocuments(updatedDocs);
+    localStorage.setItem(`mvhs_student_docs_${studentId}`, JSON.stringify(updatedDocs));
+
+    if (student) {
+      const localList = getStoredStudents();
+      const updatedLocal = localList.map((s) => s.id === student.id ? {
+        ...s,
+        uploadedDocuments: [...(s.uploadedDocuments || []), newDoc.name],
+      } : s);
+      localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
+
+      setStudent({
+        ...student,
+        uploadedDocuments: [...(student.uploadedDocuments || []), newDoc.name],
+      });
+    }
+
     setNewDocName("");
     setToastMsg(`Document "${newDoc.name}" uploaded successfully!`);
   };
 
   const handleDeleteDocument = (docId: string) => {
-    setDocuments(documents.filter((d) => d.id !== docId));
+    const updatedDocs = documents.filter((d) => d.id !== docId);
+    setDocuments(updatedDocs);
+    localStorage.setItem(`mvhs_student_docs_${studentId}`, JSON.stringify(updatedDocs));
   };
 
   if (isLoading) {
@@ -520,22 +578,46 @@ export default function StudentProfilePage() {
         {activeTab === "guardians" && (
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
-              Primary Guardian & Contact Details
+              Parents & Contact Details
             </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Father's Name</p>
+                <p className="text-sm font-bold text-slate-900">{student.fatherName || "Not Provided"}</p>
+                {student.guardianRelationship === "FATHER" && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    🔔 SMS & Alert Notification Recipient
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Mother's Name</p>
+                <p className="text-sm font-bold text-slate-900">{student.motherName || "Not Provided"}</p>
+                {student.guardianRelationship === "MOTHER" && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    🔔 SMS & Alert Notification Recipient
+                  </span>
+                )}
+              </div>
+            </div>
+
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-4">
               <div className="w-12 h-12 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl flex items-center justify-center font-bold text-lg">
-                {student.guardianName[0]}
+                {student.guardianName?.[0] || "G"}
               </div>
               <div className="space-y-1 text-xs flex-1">
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-slate-900 text-sm">{student.guardianName}</p>
                   <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                    {student.guardianRelationship}
+                    Primary Contact: {student.guardianRelationship}
                   </span>
                 </div>
-                <p className="text-slate-600 flex items-center gap-1.5 pt-1">
+                <p className="text-slate-600 flex items-center gap-1.5 pt-1.5">
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  Mobile: <span className="font-mono font-bold text-slate-900">{student.guardianMobile}</span>
+                  Notification Mobile: <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">{student.guardianMobile}</span>
+                  <span className="cursor-help" title="Receives official alerts">🔔</span>
                 </p>
                 {student.guardianEmail && (
                   <p className="text-slate-600 flex items-center gap-1.5">
@@ -725,7 +807,40 @@ export default function StudentProfilePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Guardian Name</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Father's Full Name</label>
+                  <input
+                    type="text"
+                    value={editFatherName}
+                    onChange={(e) => setEditFatherName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Mother's Full Name</label>
+                  <input
+                    type="text"
+                    value={editMotherName}
+                    onChange={(e) => setEditMotherName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Relationship</label>
+                  <select
+                    value={editGuardianRelationship}
+                    onChange={(e) => setEditGuardianRelationship(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-900"
+                  >
+                    <option value="FATHER">Father</option>
+                    <option value="MOTHER">Mother</option>
+                    <option value="GUARDIAN">Other Guardian</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Primary contact name</label>
                   <input
                     type="text"
                     value={editGuardianName}
@@ -734,13 +849,18 @@ export default function StudentProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Guardian Mobile</label>
-                  <input
-                    type="text"
-                    value={editGuardianMobile}
-                    onChange={(e) => setEditGuardianMobile(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-900 font-mono"
-                  />
+                  <label className="block font-semibold text-slate-700 mb-1">Notification Mobile *</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editGuardianMobile}
+                      onChange={(e) => setEditGuardianMobile(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-8 py-2 font-bold text-slate-900 font-mono"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 cursor-help" title="Receives official alerts">
+                      🔔
+                    </span>
+                  </div>
                 </div>
               </div>
 

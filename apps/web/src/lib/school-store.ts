@@ -16,6 +16,11 @@ export interface StudentRecordStore {
   guardianName: string;
   guardianMobile: string;
   guardianEmail?: string;
+  fatherName?: string;
+  motherName?: string;
+  guardianRelationship?: string;
+  notificationMobile?: string;
+  uploadedDocuments?: string[];
   status: string;
   totalDemand: number;
   oldBalance?: number;
