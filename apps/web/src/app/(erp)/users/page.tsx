@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, UserPlus, Shield, Pencil, Trash2, X, Save, CheckCircle2 } from "lucide-react";
 
 interface SystemUser {
@@ -28,6 +28,16 @@ export default function UsersPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", role: "Accountant", status: "ACTIVE" as "ACTIVE" | "INACTIVE" });
+
+  const [role, setRole] = useState<string>("Admin");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole(localStorage.getItem("mvhs_user_role") || "Admin");
+    }
+  }, []);
+
+  const isClerk = role.toLowerCase().includes("clerk") || role.toLowerCase().includes("cashier");
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -86,13 +96,15 @@ export default function UsersPage() {
           </h1>
           <p className="text-slate-500 text-sm mt-1">Manage staff accounts, RBAC role assignments, and login access</p>
         </div>
-        <button
-          onClick={() => { setIsAddOpen(true); setForm({ name: "", email: "", role: "Accountant", status: "ACTIVE" }); }}
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add System User
-        </button>
+        {!isClerk && (
+          <button
+            onClick={() => { setIsAddOpen(true); setForm({ name: "", email: "", role: "Accountant", status: "ACTIVE" }); }}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add System User
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -102,9 +114,9 @@ export default function UsersPage() {
             <tr>
               <th className="px-6 py-4">User Name</th>
               <th className="px-6 py-4">Email Address</th>
-              <th className="px-6 py-4">RBAC Role</th>
+               <th className="px-6 py-4">RBAC Role</th>
               <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4 text-center">Actions</th>
+              {!isClerk && <th className="px-6 py-4 text-center">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -122,24 +134,26 @@ export default function UsersPage() {
                     {u.status}
                   </span>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => openEdit(u)}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-all"
-                    >
-                      <Pencil className="w-3 h-3" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setDeletingUser(u)}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Remove
-                    </button>
-                  </div>
-                </td>
+                {!isClerk && (
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => openEdit(u)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingUser(u)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Remove
+                      </button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

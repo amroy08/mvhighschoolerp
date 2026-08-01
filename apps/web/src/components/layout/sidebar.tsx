@@ -217,7 +217,14 @@ export function Sidebar() {
 
   // Dynamically filter NAV_ITEMS based on role
   const filteredNavItems = NAV_ITEMS.map((item) => {
-    // If Accountant or Auditor, hide certain menus (Clerk sees everything)
+    // If Clerk, hide Notifications and Audit Logs
+    if (isClerk) {
+      if (item.label === "Notifications" || item.label === "Audit Logs") {
+        return null;
+      }
+    }
+
+    // If Accountant or Auditor, hide certain menus (Clerk sees everything else)
     if (isAccountant || isAuditor) {
       if (
         item.label === "Imports" ||
