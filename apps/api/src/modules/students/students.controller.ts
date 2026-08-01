@@ -80,5 +80,33 @@ export class StudentsController {
       message: 'Student profile updated successfully',
     };
   }
+
+  @Post(':id/documents')
+  @ApiOperation({ summary: 'Upload/save student document in database' })
+  async addDocument(
+    @Param('id') id: string,
+    @Body() body: { documentType: string; fileName: string },
+  ) {
+    const data = await this.studentsService.addDocument(id, body.documentType, body.fileName);
+    return {
+      success: true,
+      data,
+      message: 'Student document saved successfully',
+    };
+  }
+
+  @Delete(':id/documents/:docId')
+  @ApiOperation({ summary: 'Delete student document from database' })
+  async deleteDocument(
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+  ) {
+    const data = await this.studentsService.deleteDocument(id, docId);
+    return {
+      success: true,
+      data,
+      message: 'Student document deleted successfully',
+    };
+  }
 }
 

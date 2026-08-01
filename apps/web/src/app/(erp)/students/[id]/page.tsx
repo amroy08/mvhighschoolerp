@@ -109,25 +109,11 @@ export default function StudentProfilePage() {
   const [promoCategory, setPromoCategory] = useState<"EXISTING" | "NEW_ADMISSION">("EXISTING");
 
   // Documents List
-  const [documents, setDocuments] = useState<StudentDocumentItem[]>([
-    { id: "doc1", name: "Aadhaar Card.pdf", type: "PDF", size: "1.2 MB", uploadDate: "2026-07-30" },
-    { id: "doc2", name: "Birth Certificate.pdf", type: "PDF", size: "850 KB", uploadDate: "2026-07-30" },
-  ]);
+  const [documents, setDocuments] = useState<StudentDocumentItem[]>([]);
   const [newDocName, setNewDocName] = useState("");
 
   useEffect(() => {
     fetchStudentProfile();
-    if (studentId) {
-      const storedDocs = localStorage.getItem(`mvhs_student_docs_${studentId}`);
-      if (storedDocs) {
-        setDocuments(JSON.parse(storedDocs));
-      } else {
-        setDocuments([
-          { id: "doc1", name: "Aadhaar Card.pdf", type: "PDF", size: "1.2 MB", uploadDate: "2026-07-30" },
-          { id: "doc2", name: "Birth Certificate.pdf", type: "PDF", size: "850 KB", uploadDate: "2026-07-30" },
-        ]);
-      }
-    }
   }, [studentId]);
 
   const fetchStudentProfile = async () => {
@@ -185,6 +171,62 @@ export default function StudentProfilePage() {
             foundStudent.guardianRelationship = localMatch.guardianRelationship || foundStudent.guardianRelationship;
             foundStudent.uploadedDocuments = localMatch.uploadedDocuments || [];
           }
+
+          // Load & map documents from database
+          let apiDocs = (s.documents || []).map((doc: any) => ({
+            id: doc.id,
+            name: doc.originalName,
+            type: doc.mimeType === 'application/pdf' ? 'PDF' : 'IMG',
+            size: '1.2 MB',
+            uploadDate: doc.createdAt ? doc.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+          }));
+
+          // Background migration of wizard local-only documents to database
+          const storedDocsStr = localStorage.getItem(`mvhs_student_docs_${s.id}`);
+          if (apiDocs.length === 0 && storedDocsStr) {
+            try {
+              const localDocs = JSON.parse(storedDocsStr);
+              if (localDocs && localDocs.length > 0) {
+                for (const localDoc of localDocs) {
+                  let slotKey = "studentAadhaar";
+                  for (const slot of REQUIRED_DOCS) {
+                    if (localDoc.name.toLowerCase().includes(slot.label.split(" ")[0].toLowerCase())) {
+                      slotKey = slot.key;
+                      break;
+                    }
+                  }
+                  await fetch(`/api/v1/students/${s.id}/documents`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      documentType: slotKey,
+                      fileName: localDoc.name,
+                    }),
+                  });
+                }
+                const refetchRes = await fetch(`/api/v1/students/${s.id}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (refetchRes.ok) {
+                  const refetchData = await refetchRes.json();
+                  apiDocs = (refetchData.data.documents || []).map((doc: any) => ({
+                    id: doc.id,
+                    name: doc.originalName,
+                    type: doc.mimeType === 'application/pdf' ? 'PDF' : 'IMG',
+                    size: '1.2 MB',
+                    uploadDate: doc.createdAt ? doc.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                  }));
+                }
+                localStorage.removeItem(`mvhs_student_docs_${s.id}`);
+              }
+            } catch (err) {
+              console.error("Migration failed:", err);
+            }
+          }
+          setDocuments(apiDocs);
         }
       }
     } catch {
@@ -725,31 +767,59 @@ export default function StudentProfilePage() {
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     const oldId = uploadedDoc.id;
-                                    const newDoc: StudentDocumentItem = {
-                                      id: `doc_${slot.key}_${Date.now()}`,
-                                      name: file.name,
-                                      type: "PDF",
-                                      size: "1.2 MB",
-                                      uploadDate: new Date().toISOString().split("T")[0],
-                                    };
-                                    const filtered = documents.filter((d) => d.id !== oldId);
-                                    const updatedDocs = [newDoc, ...filtered];
-                                    setDocuments(updatedDocs);
-                                    localStorage.setItem(`mvhs_student_docs_${studentId}`, JSON.stringify(updatedDocs));
-                                    
-                                    if (student) {
-                                      const localList = getStoredStudents();
-                                      const updatedLocal = localList.map((s) => s.id === student.id ? {
-                                        ...s,
-                                        uploadedDocuments: (s.uploadedDocuments || []).filter((n: string) => n !== uploadedDoc.name).concat(newDoc.name),
-                                      } : s);
-                                      localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
-                                      setStudent({
-                                        ...student,
-                                        uploadedDocuments: (student.uploadedDocuments || []).filter((n: string) => n !== uploadedDoc.name).concat(newDoc.name),
+                                    const token = sessionStorage.getItem("access_token") ?? "";
+
+                                    // Background delete of the old document record in DB
+                                    fetch(`/api/v1/students/${studentId}/documents/${oldId}`, {
+                                      method: "DELETE",
+                                      headers: { Authorization: `Bearer ${token}` },
+                                    }).catch(() => null);
+
+                                    // Upload the replacement document to DB
+                                    fetch(`/api/v1/students/${studentId}/documents`, {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        Authorization: `Bearer ${token}`,
+                                      },
+                                      body: JSON.stringify({
+                                        documentType: slot.key,
+                                        fileName: file.name,
+                                      }),
+                                    })
+                                      .then((res) => {
+                                        if (res.ok) return res.json();
+                                        throw new Error();
+                                      })
+                                      .then((json) => {
+                                        const newDoc = {
+                                          id: json.data.id,
+                                          name: json.data.originalName,
+                                          type: "PDF",
+                                          size: "1.2 MB",
+                                          uploadDate: new Date().toISOString().split("T")[0],
+                                        };
+                                        const filtered = documents.filter((d) => d.id !== oldId);
+                                        const updatedDocs = [newDoc, ...filtered];
+                                        setDocuments(updatedDocs);
+
+                                        if (student) {
+                                          const localList = getStoredStudents();
+                                          const updatedLocal = localList.map((s) => s.id === student.id ? {
+                                            ...s,
+                                            uploadedDocuments: (s.uploadedDocuments || []).filter((n: string) => n !== uploadedDoc.name).concat(newDoc.name),
+                                          } : s);
+                                          localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
+                                          setStudent({
+                                            ...student,
+                                            uploadedDocuments: (student.uploadedDocuments || []).filter((n: string) => n !== uploadedDoc.name).concat(newDoc.name),
+                                          });
+                                        }
+                                        setToastMsg(`Replaced ${slot.label} successfully!`);
+                                      })
+                                      .catch(() => {
+                                        setToastMsg("Replacement failed.");
                                       });
-                                    }
-                                    setToastMsg(`Replaced ${slot.label} successfully!`);
                                   }
                                 }}
                                 className="hidden"
@@ -774,32 +844,50 @@ export default function StudentProfilePage() {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const newDoc: StudentDocumentItem = {
-                                    id: `doc_${slot.key}_${Date.now()}`,
-                                    name: file.name,
-                                    type: "PDF",
-                                    size: "1.2 MB",
-                                    uploadDate: new Date().toISOString().split("T")[0],
-                                  };
-                                  const updatedDocs = [newDoc, ...documents];
-                                  setDocuments(updatedDocs);
-                                  localStorage.setItem(`mvhs_student_docs_${studentId}`, JSON.stringify(updatedDocs));
-                                  
-                                  // Sync uploadedDocuments list in student local record
-                                  if (student) {
-                                    const localList = getStoredStudents();
-                                    const updatedLocal = localList.map((s) => s.id === student.id ? {
-                                      ...s,
-                                      uploadedDocuments: [...(s.uploadedDocuments || []), newDoc.name],
-                                    } : s);
-                                    localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
-                                    setStudent({
-                                      ...student,
-                                      uploadedDocuments: [...(student.uploadedDocuments || []), newDoc.name],
+                                  const token = sessionStorage.getItem("access_token") ?? "";
+                                  fetch(`/api/v1/students/${studentId}/documents`, {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${token}`,
+                                    },
+                                    body: JSON.stringify({
+                                      documentType: slot.key,
+                                      fileName: file.name,
+                                    }),
+                                  })
+                                    .then((res) => {
+                                      if (res.ok) return res.json();
+                                      throw new Error();
+                                    })
+                                    .then((json) => {
+                                      const newDoc: StudentDocumentItem = {
+                                        id: json.data.id,
+                                        name: json.data.originalName,
+                                        type: "PDF",
+                                        size: "1.2 MB",
+                                        uploadDate: new Date().toISOString().split("T")[0],
+                                      };
+                                      const updatedDocs = [newDoc, ...documents];
+                                      setDocuments(updatedDocs);
+
+                                      if (student) {
+                                        const localList = getStoredStudents();
+                                        const updatedLocal = localList.map((s) => s.id === student.id ? {
+                                          ...s,
+                                          uploadedDocuments: [...(s.uploadedDocuments || []), newDoc.name],
+                                        } : s);
+                                        localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
+                                        setStudent({
+                                          ...student,
+                                          uploadedDocuments: [...(student.uploadedDocuments || []), newDoc.name],
+                                        });
+                                      }
+                                      setToastMsg(`Uploaded ${slot.label} successfully!`);
+                                    })
+                                    .catch(() => {
+                                      setToastMsg("Upload failed.");
                                     });
-                                  }
-                                  
-                                  setToastMsg(`Uploaded ${slot.label} successfully!`);
                                 }
                               }}
                               className="hidden"

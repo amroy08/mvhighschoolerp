@@ -290,6 +290,61 @@ export class StudentsService {
   }
 
   /**
+   * Add a new student document to PostgreSQL database
+   */
+  async addDocument(studentId: string, documentTypeKey: string, fileName: string) {
+    const student = await this.prisma.student.findUnique({ where: { id: studentId } });
+    if (!student) {
+      throw new NotFoundException({ code: 'STUDENT_NOT_FOUND', message: `Student with ID ${studentId} not found` });
+    }
+
+    // Upsert DocumentType row dynamically
+    let docType = await this.prisma.documentType.findUnique({
+      where: { code: documentTypeKey.toUpperCase() },
+    });
+    if (!docType) {
+      docType = await this.prisma.documentType.create({
+        data: {
+          code: documentTypeKey.toUpperCase(),
+          name: documentTypeKey.replace(/([A-Z])/g, ' $1').trim().replace(/^\w/, (c) => c.toUpperCase()),
+        },
+      });
+    }
+
+    // Insert StudentDocument row
+    const doc = await this.prisma.studentDocument.create({
+      data: {
+        studentId,
+        documentTypeId: docType.id,
+        fileKey: fileName,
+        originalName: fileName,
+        fileSize: BigInt(1200000), // mock 1.2MB
+        mimeType: fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+      },
+      include: { documentType: true },
+    });
+
+    return {
+      ...doc,
+      fileSize: Number(doc.fileSize), // cast BigInt to number for JSON serialization
+    };
+  }
+
+  /**
+   * Remove a student document from PostgreSQL database
+   */
+  async deleteDocument(studentId: string, documentId: string) {
+    const deleted = await this.prisma.studentDocument.deleteMany({
+      where: {
+        id: documentId,
+        studentId,
+      },
+    });
+
+    return { success: deleted.count > 0 };
+  }
+
+  /**
    * Purge all student records from database
    */
   async purge() {
