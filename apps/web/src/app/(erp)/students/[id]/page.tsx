@@ -23,6 +23,7 @@ import {
   X,
   Loader2,
   Plus,
+  Check,
   ArrowUpDown,
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
@@ -36,10 +37,31 @@ interface StudentDocumentItem {
   uploadDate: string;
 }
 
+const REQUIRED_DOCS = [
+  { key: "studentPhoto", label: "Student Passport Photo", keywords: ["photo", "passport"] },
+  { key: "studentAadhaar", label: "Student Aadhaar Card", keywords: ["aadhaar", "student"] },
+  { key: "fatherAadhaar", label: "Father Aadhaar Card", keywords: ["father"] },
+  { key: "motherAadhaar", label: "Mother Aadhaar Card", keywords: ["mother"] },
+  { key: "guardianAadhaar", label: "Guardian Aadhaar Card", keywords: ["guardian"] },
+  { key: "tclc", label: "Transfer Certificate (TC) / LC", keywords: ["tc", "lc", "leaving", "transfer"] },
+  { key: "marksheet", label: "Marksheet / Previous Result", keywords: ["marksheet", "result", "report"] },
+  { key: "birthCertificate", label: "Birth Certificate", keywords: ["birth"] },
+];
+
 export default function StudentProfilePage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.id as string;
+
+  const findDocForCategory = (keywords: string[]) => {
+    return documents.find((doc) => {
+      const nameLower = doc.name.toLowerCase();
+      if (keywords.includes("student") && keywords.includes("aadhaar")) {
+        return nameLower.includes("aadhaar") && !nameLower.includes("father") && !nameLower.includes("mother") && !nameLower.includes("guardian");
+      }
+      return keywords.every((kw) => nameLower.includes(kw));
+    });
+  };
 
   const [activeTab, setActiveTab] = useState<"overview" | "guardians" | "academic" | "documents" | "fees">("overview");
   const [isLoading, setIsLoading] = useState(true);
@@ -657,61 +679,147 @@ export default function StudentProfilePage() {
         )}
 
         {activeTab === "documents" && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Uploaded Student Documents ({documents.length})
-              </h3>
+          <div className="space-y-6">
+            {/* Required slots checklist */}
+            <div className="bg-slate-50/50 border border-slate-200 rounded-2xl p-5 space-y-4">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Required Document Checklist</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {REQUIRED_DOCS.map((slot) => {
+                  const uploadedDoc = findDocForCategory(slot.keywords);
+                  return (
+                    <div key={slot.key} className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${uploadedDoc ? "bg-emerald-100 text-emerald-700" : "bg-orange-50 text-orange-600"}`}>
+                          {uploadedDoc ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 truncate">{slot.label}</p>
+                          {uploadedDoc ? (
+                            <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate max-w-[170px]" title={uploadedDoc.name}>
+                              {uploadedDoc.name}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-orange-500 font-semibold mt-0.5">Pending Upload</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        {uploadedDoc ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => alert(`Downloading ${uploadedDoc.name}...`)}
+                              className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 rounded-lg border border-blue-200"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDocument(uploadedDoc.id)}
+                              className="text-red-500 hover:text-red-750 p-1.5 bg-red-50 rounded-lg border border-red-200"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="cursor-pointer inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+                            <Upload className="w-3.5 h-3.5" />
+                            Upload
+                            <input
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const newDoc: StudentDocumentItem = {
+                                    id: `doc_${slot.key}_${Date.now()}`,
+                                    name: file.name,
+                                    type: "PDF",
+                                    size: "1.2 MB",
+                                    uploadDate: new Date().toISOString().split("T")[0],
+                                  };
+                                  const updatedDocs = [newDoc, ...documents];
+                                  setDocuments(updatedDocs);
+                                  localStorage.setItem(`mvhs_student_docs_${studentId}`, JSON.stringify(updatedDocs));
+                                  
+                                  // Sync uploadedDocuments list in student local record
+                                  if (student) {
+                                    const localList = getStoredStudents();
+                                    const updatedLocal = localList.map((s) => s.id === student.id ? {
+                                      ...s,
+                                      uploadedDocuments: [...(s.uploadedDocuments || []), newDoc.name],
+                                    } : s);
+                                    localStorage.setItem("mvhs_local_students", JSON.stringify(updatedLocal));
+                                    setStudent({
+                                      ...student,
+                                      uploadedDocuments: [...(student.uploadedDocuments || []), newDoc.name],
+                                    });
+                                  }
+                                  
+                                  setToastMsg(`Uploaded ${slot.label} successfully!`);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Document Upload Form */}
-            <form onSubmit={handleUploadDocument} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-3 items-center">
-              <input
-                type="text"
-                value={newDocName}
-                onChange={(e) => setNewDocName(e.target.value)}
-                placeholder="Document Title (e.g. Birth Certificate, Aadhaar Card, Transfer Certificate)..."
-                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-              <button
-                type="submit"
-                disabled={!newDocName.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Upload Document
-              </button>
-            </form>
+            {/* Custom Documents Section */}
+            <div className="space-y-4 pt-2">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Additional / Custom Documents</h4>
+              
+              <form onSubmit={handleUploadDocument} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-3 items-center">
+                <input
+                  type="text"
+                  value={newDocName}
+                  onChange={(e) => setNewDocName(e.target.value)}
+                  placeholder="Document Title (e.g. Extra Certificate, Admit Card)..."
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+                <button
+                  type="submit"
+                  disabled={!newDocName.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload Custom
+                </button>
+              </form>
 
-            {/* Documents List */}
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between bg-white border border-slate-200 p-3.5 rounded-xl text-xs">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <p className="font-bold text-slate-900">{doc.name}</p>
-                      <p className="text-slate-400 text-[11px] font-mono">
-                        {doc.type} • {doc.size} • Uploaded {doc.uploadDate}
-                      </p>
+              <div className="space-y-2">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between bg-white border border-slate-200 p-3.5 rounded-xl text-xs">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="font-bold text-slate-900">{doc.name}</p>
+                        <p className="text-slate-400 text-[11px] font-mono">
+                          {doc.type} • {doc.size} • Uploaded {doc.uploadDate}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => alert(`Downloading ${doc.name}...`)}
+                        className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 rounded-lg border border-blue-200"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDocument(doc.id)}
+                        className="text-red-500 hover:text-red-750 p-1.5 bg-red-50 rounded-lg border border-red-200"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => alert(`Downloading ${doc.name}...`)}
-                      className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 rounded-lg border border-blue-200"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteDocument(doc.id)}
-                      className="text-red-500 hover:text-red-700 p-1.5 bg-red-50 rounded-lg border border-red-200"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}

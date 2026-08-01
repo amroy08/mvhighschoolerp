@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/v1/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/v1/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000"}/api/v1/:path*`,
       },
     ];
   },
@@ -29,6 +29,13 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+  // Webpack config to disable cache in development and bypass Node.js V8 deopt crashes
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.cache = false;
+    }
+    return config;
   },
 };
 
