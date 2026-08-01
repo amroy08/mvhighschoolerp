@@ -150,6 +150,9 @@ We performed a deep audit of the code and solved the critical local-storage deco
 - **Legacy Excel Imports**: Updated the Vantage Excel import pipeline to look up grade and section UUIDs dynamically from the API, storing all imported students correctly into the PostgreSQL database.
 - **Data Truncation Fixes**: Appended `limit=1000` to all student query endpoints on the frontend (Dashboard, Outstandings, Student Directory, Reports, Analytics, Promotions, and Enrolments) to ensure full accuracy of reports and metrics for up to 1000 students (supporting the school's 570 students).
 - **Aesthetic & Validation Cleanups**: Fixed school naming across Ledger and receipt prints, removed generic terminology ("invoices" -> "receipts"), added strict payment amount checks (prevents overpayment/negative amounts), and payment-mode specific validations (UPI requires UTR reference, Cheques require numbers).
+- **Admissions Wizard Upgrades**: Expanded layout width (`max-w-5xl`) and introduced Optional Mother & Father profile sections, labeled notification SMS number explicitly with notification settings, and integrated a complete Document Upload Step.
+- **Student Profile Document Checklist**: Re-engineered the "Student Documents" tab into a dynamic checklist mapping the 8 required slots (Photo, Student/Father/Mother/Guardian Aadhaars, LC/TC, Marksheet, and Birth Certificate). Provides status checks (Uploaded/Pending Upload) and inline uploads/deletes.
+- **Dev Proxy Hang Fix**: Replaced `localhost` with `127.0.0.1` in web rewrites to bypass MacOS IPv6 loopback routing conflicts, eliminating login freezes.
 
 ---
 
