@@ -863,7 +863,7 @@ export default function AdmissionsPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-emerald-650 hover:bg-emerald-700 text-white font-bold text-xs px-8 py-3 rounded-xl shadow-sm flex items-center gap-2 hover:-translate-y-0.5 transition-all"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-8 py-3 rounded-xl shadow-sm flex items-center gap-2 hover:-translate-y-0.5 transition-all"
               >
                 {isSubmitting ? (
                   <>
