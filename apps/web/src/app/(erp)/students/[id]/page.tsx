@@ -48,6 +48,14 @@ const REQUIRED_DOCS = [
   { key: "birthCertificate", label: "Birth Certificate", keywords: ["birth"] },
 ];
 
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
+
 export default function StudentProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -177,7 +185,7 @@ export default function StudentProfilePage() {
             id: doc.id,
             name: doc.originalName,
             type: doc.mimeType === 'application/pdf' ? 'PDF' : 'IMG',
-            size: '1.2 MB',
+            size: formatBytes(Number(doc.fileSize)),
             uploadDate: doc.createdAt ? doc.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
           }));
 
@@ -766,6 +774,14 @@ export default function StudentProfilePage() {
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
+                                    if (file.size < 1024) {
+                                      setToastMsg("File size must be at least 1 KB.");
+                                      return;
+                                    }
+                                    if (file.size > 10485760) {
+                                      setToastMsg("File size must not exceed 10 MB.");
+                                      return;
+                                    }
                                     const oldId = uploadedDoc.id;
                                     const token = sessionStorage.getItem("access_token") ?? "";
 
@@ -785,6 +801,7 @@ export default function StudentProfilePage() {
                                       body: JSON.stringify({
                                         documentType: slot.key,
                                         fileName: file.name,
+                                        fileSize: file.size,
                                       }),
                                     })
                                       .then((res) => {
@@ -796,7 +813,7 @@ export default function StudentProfilePage() {
                                           id: json.data.id,
                                           name: json.data.originalName,
                                           type: "PDF",
-                                          size: "1.2 MB",
+                                          size: formatBytes(file.size),
                                           uploadDate: new Date().toISOString().split("T")[0],
                                         };
                                         const filtered = documents.filter((d) => d.id !== oldId);
@@ -844,6 +861,14 @@ export default function StudentProfilePage() {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
+                                  if (file.size < 1024) {
+                                    setToastMsg("File size must be at least 1 KB.");
+                                    return;
+                                  }
+                                  if (file.size > 10485760) {
+                                    setToastMsg("File size must not exceed 10 MB.");
+                                    return;
+                                  }
                                   const token = sessionStorage.getItem("access_token") ?? "";
                                   fetch(`/api/v1/students/${studentId}/documents`, {
                                     method: "POST",
@@ -854,6 +879,7 @@ export default function StudentProfilePage() {
                                     body: JSON.stringify({
                                       documentType: slot.key,
                                       fileName: file.name,
+                                      fileSize: file.size,
                                     }),
                                   })
                                     .then((res) => {
@@ -865,7 +891,7 @@ export default function StudentProfilePage() {
                                         id: json.data.id,
                                         name: json.data.originalName,
                                         type: "PDF",
-                                        size: "1.2 MB",
+                                        size: formatBytes(file.size),
                                         uploadDate: new Date().toISOString().split("T")[0],
                                       };
                                       const updatedDocs = [newDoc, ...documents];
