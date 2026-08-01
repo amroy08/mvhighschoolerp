@@ -82,11 +82,12 @@ const NAV_ITEMS: NavItem[] = [
     href: "/imports",
     icon: <Import className="w-4 h-4" />,
   },
-  {
-    label: "Notices & Circulars",
-    href: "/notices",
-    icon: <Megaphone className="w-4 h-4" />,
-  },
+  // ── Hidden for now — can re-enable later ──
+  // {
+  //   label: "Notices & Circulars",
+  //   href: "/notices",
+  //   icon: <Megaphone className="w-4 h-4" />,
+  // },
   {
     label: "Academic Planner",
     href: "/planner",
