@@ -119,6 +119,7 @@ export default function DashboardPage() {
           "Grade 1";
         const category =
           (localStorage.getItem(`mvhs_student_category_${s.id}`) as any) ||
+          s.admissionCategory ||
           (s.enrolments?.[0]?.admissionType === "NEW" ? "NEW_ADMISSION" : "EXISTING");
         const financials = calculateStudentFinancials({
           id: s.id,
