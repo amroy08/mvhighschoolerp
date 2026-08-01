@@ -74,6 +74,7 @@ export class PromotionsService {
     const school = await this.prisma.school.findFirstOrThrow();
     const branch = await this.prisma.branch.findFirstOrThrow({ where: { schoolId: school.id } });
 
+    const fromAY = await this.prisma.academicYear.findUniqueOrThrow({ where: { id: fromAcademicYearId } });
     const targetGrade = await this.prisma.grade.findUniqueOrThrow({ where: { id: toGradeId } });
     const targetSection = await this.prisma.section.findUniqueOrThrow({ where: { id: toSectionId } });
 
@@ -169,7 +170,7 @@ export class PromotionsService {
               paidAmount: '0.00',
               outstandingAmount: arrearTotal.toFixed(2),
               status: FeeChargeStatus.DUE,
-              sourceYear: '2025-26',
+              sourceYear: fromAY.name,
             },
           });
         }

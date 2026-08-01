@@ -153,9 +153,9 @@ export default function PromotionsPage() {
     // Resolve target section name ("Section A" -> "A")
     const secName = targetSection.toLowerCase().includes("b") ? "B" : "A";
 
-    // Resolve academic years (from 2025-26 to 2026-27 by default, or look them up)
-    const fromAY = academicYears.find((ay) => ay.name === "2025-26") || { id: "00000000-0000-0000-0000-000000000010" };
-    const toAY = academicYears.find((ay) => ay.name === "2026-27") || { id: "00000000-0000-0000-0000-000000000011" };
+    // Resolve academic years (from 2026-27 to 2027-28 by default, or look them up)
+    const fromAY = academicYears.find((ay) => ay.name === "2026-27") || { id: "00000000-0000-0000-0000-000000000011" };
+    const toAY = academicYears.find((ay) => ay.name === "2027-28") || { id: "00000000-0000-0000-0000-000000000013" };
 
     // Resolve grade UUIDs from database list
     const fromGradeObj = dbGrades.find((g) => g.name.toLowerCase() === selectedGrade.toLowerCase());
@@ -261,7 +261,7 @@ export default function PromotionsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Source Grade (2025-26)</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Source Grade (2026-27)</label>
             <select
               value={selectedGrade}
               onChange={(e) => {
@@ -300,7 +300,7 @@ export default function PromotionsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Target Grade (2026-27)</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Target Grade (2027-28)</label>
             <select
               value={targetGrade}
               onChange={(e) => setTargetGrade(e.target.value)}

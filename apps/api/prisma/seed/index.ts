@@ -38,6 +38,7 @@ const BRANCH_ID = '00000000-0000-0000-0000-000000000003';
 const AY_2526_ID = '00000000-0000-0000-0000-000000000010';
 const AY_2627_ID = '00000000-0000-0000-0000-000000000011';
 const FY_2526_ID = '00000000-0000-0000-0000-000000000012';
+const AY_2728_ID = '00000000-0000-0000-0000-000000000013';
 
 async function main() {
   console.log('🌱 Starting MVHS ERP seed...');
@@ -128,6 +129,19 @@ async function main() {
       startDate: new Date('2026-06-01'),
       endDate: new Date('2027-03-31'),
       isCurrent: true,
+    },
+  });
+
+  await prisma.academicYear.upsert({
+    where: { id: AY_2728_ID },
+    update: {},
+    create: {
+      id: AY_2728_ID,
+      schoolId: SCHOOL_ID,
+      name: '2027-28',
+      startDate: new Date('2027-06-01'),
+      endDate: new Date('2028-03-31'),
+      isCurrent: false,
     },
   });
 
