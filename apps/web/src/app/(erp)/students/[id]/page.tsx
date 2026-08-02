@@ -35,6 +35,7 @@ interface StudentDocumentItem {
   type: string;
   size: string;
   uploadDate: string;
+  category?: string;
 }
 
 const REQUIRED_DOCS = [
@@ -61,14 +62,8 @@ export default function StudentProfilePage() {
   const router = useRouter();
   const studentId = params.id as string;
 
-  const findDocForCategory = (keywords: string[]) => {
-    return documents.find((doc) => {
-      const nameLower = doc.name.toLowerCase();
-      if (keywords.includes("student") && keywords.includes("aadhaar")) {
-        return nameLower.includes("aadhaar") && !nameLower.includes("father") && !nameLower.includes("mother") && !nameLower.includes("guardian");
-      }
-      return keywords.every((kw) => nameLower.includes(kw));
-    });
+  const findDocForCategory = (slotKey: string) => {
+    return documents.find((doc) => doc.category === slotKey.toLowerCase());
   };
 
   const [activeTab, setActiveTab] = useState<"overview" | "guardians" | "academic" | "documents" | "fees">("overview");
@@ -187,6 +182,7 @@ export default function StudentProfilePage() {
             type: doc.mimeType === 'application/pdf' ? 'PDF' : 'IMG',
             size: formatBytes(Number(doc.fileSize)),
             uploadDate: doc.createdAt ? doc.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            category: doc.documentType?.code?.toLowerCase(),
           }));
 
           // Background migration of wizard local-only documents to database
@@ -224,8 +220,9 @@ export default function StudentProfilePage() {
                     id: doc.id,
                     name: doc.originalName,
                     type: doc.mimeType === 'application/pdf' ? 'PDF' : 'IMG',
-                    size: '1.2 MB',
+                    size: formatBytes(Number(doc.fileSize)),
                     uploadDate: doc.createdAt ? doc.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                    category: doc.documentType?.code?.toLowerCase(),
                   }));
                 }
                 localStorage.removeItem(`mvhs_student_docs_${s.id}`);
@@ -735,7 +732,7 @@ export default function StudentProfilePage() {
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Required Document Checklist</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {REQUIRED_DOCS.map((slot) => {
-                  const uploadedDoc = findDocForCategory(slot.keywords);
+                  const uploadedDoc = findDocForCategory(slot.key);
                   return (
                     <div key={slot.key} className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2.5">
@@ -815,6 +812,7 @@ export default function StudentProfilePage() {
                                           type: "PDF",
                                           size: formatBytes(file.size),
                                           uploadDate: new Date().toISOString().split("T")[0],
+                                          category: slot.key.toLowerCase(),
                                         };
                                         const filtered = documents.filter((d) => d.id !== oldId);
                                         const updatedDocs = [newDoc, ...filtered];
@@ -893,6 +891,7 @@ export default function StudentProfilePage() {
                                         type: "PDF",
                                         size: formatBytes(file.size),
                                         uploadDate: new Date().toISOString().split("T")[0],
+                                        category: slot.key.toLowerCase(),
                                       };
                                       const updatedDocs = [newDoc, ...documents];
                                       setDocuments(updatedDocs);
