@@ -253,7 +253,15 @@ export class StudentsService {
       throw new NotFoundException({ code: 'STUDENT_NOT_FOUND', message: `Student with ID ${id} not found` });
     }
 
-    return student;
+    const mappedDocuments = (student.documents || []).map((doc) => ({
+      ...doc,
+      fileSize: Number(doc.fileSize),
+    }));
+
+    return {
+      ...student,
+      documents: mappedDocuments,
+    };
   }
 
   /**
